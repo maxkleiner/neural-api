@@ -1,0 +1,1894 @@
+program CAI_NEURAL_API_DenseNetBCL40_2;
+
+//http://www.softwareschule.ch/examples/uPSI_NeuralNetworkCAI.txt
+//http://www.softwareschule.ch/examples/uPSI_Neuralvolume.txt
+//https://github.com/joaopauloschuler/neural-api/blob/master/examples/https://github.com/joaopauloschuler/neural-api/blob/master/examples/Hypotenuse/Hypotenuse.lpr
+
+//https://ibrt.ch/delphi/neuralnets.html
+
+(*
+const inputs : TBackInput =
+  ( // x1,   x2
+    ( 0.1,  0.1), // False, False
+    ( 0.1,  0.9), // False, True
+    ( 0.9,  0.1), // True,  False
+    ( 0.9,  0.9)  // True,  True
+  );
+ *)
+ 
+ procedure TTestCNNAlgoTrainDense(); forward;
+ function TTestCNNAlgoDenseNetLearningRateSchedule(Epoch: integer): 
+                                        single; forward;
+ 
+ var  ffLearningRate, fInertia, ftarget, fDropout: double;
+ procedure TTestCNNAlgoDoRun;
+  var
+    LearningRate, Inertia, Target: string;
+    ca: TCustomApplication;
+  begin
+    // parse parameters
+    if ca.HasOption1('h', 'help') then  begin
+      //WriteHelp;
+      //Terminate;
+      //Exit;
+    end;
+
+    ffLearningRate := 0.001;
+    if ca.HasOption1('l', 'learningrate') then begin
+      LearningRate := ca.GetOptionValue1('l', 'learningrate');
+      ffLearningRate := StrToFloat(LearningRate);
+    end;
+
+    fInertia := 0.9; //0.75 should also be tested.
+    if ca.HasOption1('i', 'inertia') then begin
+      Inertia := ca.GetOptionValue1('i', 'inertia');
+      fInertia := StrToFloat(Inertia);
+    end;
+
+    fTarget := 1;
+    if ca.HasOption1('t', 'target') then begin
+      Target := ca.GetOptionValue1('t', 'target');
+      fTarget := StrToFloat(Target);
+    end;
+
+    fDropout := 0.0;
+    if ca.HasOption1('d', 'dropout') then begin
+      Target := ca.GetOptionValue1('d', 'dropout');
+      fDropout := StrToFloat(Target);
+    end;
+
+    TTestCNNAlgoTrainDense();
+
+    //Terminate;
+  end;
+  
+ procedure TTestCNNAlgoTrainDense();
+  var
+    NN: THistoricalNets;
+    NeuralFit: TNeuralImageFit;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+    NumClasses: integer;
+    fileNameBase: string;
+  begin
+    if not CheckCIFARFile() then writeln('CheckCIFARFile not passed! '); //exit;
+    WriteLn('Creating Neural Network Dense...');
+    NumClasses  := 10;
+    NN := THistoricalNets.Create();
+    try
+    fileNameBase := 'DenseNetBCL40_2';
+    
+    ffLearningRate := 0.001;
+    fInertia := 0.9 ;
+    fTarget := 1;
+    fDropout := 0.2;
+
+    NN.AddLayer(TNNetInput.Create4(32, 32, 3) );
+    //NN.AddLayer(TNNetInput.Create4(32, 32, 3) );
+    NN.AddLayer(TNNetConvolutionLinear.Create(4,3,1,1,1)).InitBasicPatterns();
+    //NN.AddLayer(TNNetConvolutionLinear.Create(64,3,1,1,1)).InitBasicPatterns();
+    //NN.AddDenseNetBlock(6, 12, 48, 0, fDropout);
+    NN.AddDenseNetBlock(6, 12, 4, 0, fDropout);
+    NN.AddDenseNetTransition(0.5, 1, false);
+    {NN.AddDenseNetBlock(6, 12, 48, 0, fDropout);
+    NN.AddDenseNetTransition(0.5, 1, false);
+    NN.AddDenseNetBlock(6, 12, 48, 0, fDropout);  }
+    NN.AddMovingNorm60(false, 0, 0, nil);
+    NN.AddLayer( TNNetSELU.Create() );
+    NN.AddLayer( TNNetMaxChannel.Create() );
+    NN.AddLayer( TNNetFullConnectLinear.Create28(NumClasses,0) );
+    NN.AddLayer( TNNetSoftMax.Create() );
+
+    WriteLn('Learning rate set to: ['+flots(ffLearningRate)+']');
+    //WriteLn('Inertia set to: [',fInertia:7:5,']');
+    WriteLn('Inertia set to: ['+flots(fInertia)+']');
+    WriteLn('Target set to: ['+flots(fTarget)+']');
+
+    CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                              ImgTestVolumes, csEncodeRGB);
+
+    WriteLn('Neural Network will minimize error with:');
+    WriteLn(' Layers: '+itoa( NN.CountLayers()));
+    WriteLn(' Neurons:'+itoa( NN.CountNeurons()));
+    WriteLn(' Weights:'+itoa( NN.CountWeights()));
+    NN.DebugWeights();
+    NN.DebugStructure();
+
+    NeuralFit := TNeuralImageFit.Create;
+    NeuralFit.FileNameBase := fileNameBase;
+    NeuralFit.InitialLearningRate := ffLearningRate;
+    NeuralFit.Inertia := fInertia;
+    NeuralFit.TargetAccuracy := fTarget;
+    NeuralFit.CustomLearningRateScheduleObjFn:= 
+                              @TTestCNNAlgoDenseNetLearningRateSchedule;
+    NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, {epochs 300}
+                     ImgTestVolumes, NumClasses, {batchsize=}64, {epochs=}10);
+    //*)
+    finally
+      NeuralFit.Free;
+      NN.Free;
+      ImgTestVolumes.Free;
+      ImgValidationVolumes.Free;
+      ImgTrainingVolumes.Free;
+    end;  
+  end;
+ 
+ const sLineBreak= #13#10;
+ procedure TTestCNNAlgoWriteHelp;
+  begin
+    WriteLn
+    (
+      'CIFAR-10 DenseNetBC L40 Classification Example by Joao Paulo Schwarz Schuler'+sLineBreak+
+      'Command Line Example: DenseNetBCL40 -i 0.8'+ sLineBreak+
+      ' -h : displays this help. '+ sLineBreak+
+      ' -i : defines inertia. Default is -i 0.9.'+ sLineBreak+
+      ' -l : defines learing rate. Default is -l 0.001. '+ sLineBreak+
+      ' -d : defines dropout rate. Default is -d 0.0. '+ sLineBreak+
+      ' https://sourceforge.net/p/cai/svncode/HEAD/tree/trunk/lazarus/examples/DenseNetBCL40/'+sLineBreak+
+      ' More info at:'+sLineBreak+
+      '   https://github.com/joaopauloschuler/neural-api'
+    );
+  end;
+  
+  
+function CreateHypotenusePairList(MaxCnt: integer): TNNetVolumePairList;
+  var
+    Cnt: integer;
+    LocalX, LocalY, Hypotenuse: TNeuralFloat;
+  begin
+    Result := TNNetVolumePairList.Create(true);
+    for Cnt := 1 to MaxCnt do begin
+      LocalX := Random(100);
+      LocalY := Random(100);
+      Hypotenuse := sqrt(LocalX*LocalX + LocalY*LocalY);
+
+      {Result.items[0]:= TNNetVolumePair.Create82(
+          TNNetVolume.Create1([LocalX, LocalY]),
+          TNNetVolume.Create1([Hypotenuse])
+        );    //}
+        
+      Result.Add(
+        TNNetVolumePair.Create82(
+          TNNetVolume.Create1([LocalX, LocalY]),
+          TNNetVolume.Create1([Hypotenuse])
+        )
+      ); //}
+    end;
+  end;
+  
+   // Returns TRUE if difference is smaller than 0.1 .
+  function LocalFloatCompare(A, B: TNNetVolume; ThreadId: integer): boolean;
+  var FDataA, FDataB: TNeuralFloatArray;
+  begin
+    FDataA:= A.FData;     
+    FDataB:= B.FData;            
+    //((Result := ( Abs(A.FData[0]-B.FData[0])<0.1 );
+    //writeln(flots(A.FData3[0]-B.FData3[0]));
+    Result := ( Abs(FDataA[0]-FDataB[0])<0.1 );
+  end;
+  
+function MonopolarCompare(var A, B: TNNetVolume; ThreadId: integer): boolean;
+var
+  Pos: integer;
+  ACount, BCount: integer;
+  var FDataA, FDataB: TNeuralFloatArray;
+begin
+  ACount := A.Size;
+  BCount := B.Size;
+  Result := (ACount>0) and (ACount = BCount);
+  Pos := 0;
+  while Result and (Pos < ACount) do begin
+    FDataA:= A.FData;     
+    FDataB:= B.FData;  
+    
+    Result:= Result and (
+     // ( (A.FData[Pos]>0.5) and (B.FData[Pos]>0.5) ) or
+     // ( (A.FData[Pos]<0.5) and (B.FData[Pos]<0.5) )
+       ( (FDataA[Pos]>0.5) and (FDataB[Pos]>0.5) ) or
+       ( (FDataA[Pos]<0.5) and (FDataB[Pos]<0.5) )
+    );  //*)
+    Inc(Pos);
+  end;
+end;
+
+function TTestCNNAlgoDenseNetLearningRateSchedule(Epoch: integer): single;
+          // fLearningRate: float): single;
+ //var  flearningrate: double;         
+  begin
+   //flearningrate:= 0.001;
+    if Epoch < 150
+      then Result := ffLearningRate
+    else if epoch < 225
+      then Result :=  ffLearningRate * 0.1
+    else
+      Result := ffLearningRate * 0.01;
+  end;
+
+  
+  procedure TTestCNNAlgoDoRunHypo;
+  var
+    NN: TNNet;
+    NFit: TNeuralFit;
+    //NeuralFit: TNeuralImageFit;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+    TrainingPairs, ValidationPairs, TestPairs: TNNetVolumePairList;
+    Cnt: integer;
+    pOutPut: TNNetVolume; var FDataA, FDataB: TNeuralFloatArray;
+  begin
+    {if not CheckCIFARFile() then
+    begin
+      //Terminate;
+      exit;
+    end; }
+    WriteLn('Creating CNeural Network...');
+    //TNNetConvolutionBase.Create36({Features=}64, {FeatureSize=}5, 
+      //                    {Padding=}2, {Stride=}1, {SuppressBias=}1);
+    NN := TNNet.Create();
+    //NN.verbose:= true;
+    NFit := TNeuralFit.Create();
+    
+    TrainingPairs := CreateHypotenusePairList(10000);
+    ValidationPairs := CreateHypotenusePairList(1000);
+    TestPairs := CreateHypotenusePairList(1000);
+    
+    NN.AddLayer2([
+      TNNetInput.Create3(2),
+     TNNetFullConnectReLU.Create30(2,0),
+     TNNetFullConnectReLU.Create30(2,0),
+     TNNetFullConnectReLU.Create30(1,0)
+      //TNNetDropout.Create12(0.5,1),
+      //TNNetMaxPool.Create44(2,0,0),
+      //TNNetFullConnectLinear.Create28(10,0),
+      //TNNetSoftMax.Create()
+    ]);     //*)
+    NN.DebugStructure();
+    
+     WriteLn('NN Computing...');
+   
+    //TestBatch;
+    //NeuralFit := TNeuralImageFit.Create;
+    try
+      NFit.FileNameBase := 'Hypotenuse-'+IntToStr(GetProcessId());
+      nfit.verbose:= true;
+      NFit.InitialLearningRate := 0.00001;
+      NFit.LearningRateDecay := 0;
+      //NeuralFit.StaircaseEpochs := 10;
+      NFit.Inertia := 0.3;
+      NFit.L2Decay := 0;
+      //Nfit.lossfn
+      //NFit.InferHitFn := @LocalFloatCompare;
+      //writeln(botostr(MonopolarCompare(pOutPut, pOutPut, 1)));
+       //NFit.CustomLearningRateScheduleObjFn := 
+         //                 @{Self.}TTestCNNAlgoDenseNetLearningRateSchedule;
+      
+      //NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}64, {epochs=}50);
+      NFit.Fit(NN, TrainingPairs, ValidationPairs, TestPairs, 
+                                     {batchsize=}32, {epochs=}50);
+      NN.DebugWeights();
+    
+    pOutPut:= TNNetVolume.Create0({pSizeX=}1, {pSizeY=}1, {pDepth=}1, {FillValue=}1);
+      writeln(botostr(MonopolarCompare(pOutPut, pOutPut, 1)));
+  
+    // tests the learning
+    for Cnt := 0 to 9 do begin
+     //Procedure Compute65( pInput : TNNetVolume; FromLayerIdx : integer);');
+      NN.Compute65(TestPairs[Cnt].I,0);
+      NN.GetOutput(pOutPut);
+      FDATAA:= TestPairs[Cnt].I.FData;    
+      WriteLn
+      ( 'Inputs:'+
+        //TestPairs[Cnt].I.FData[0]:5:2,', ',
+        //TestPairs[Cnt].I.FData[1]:5:2,' - ',
+        flots(FDATAA[0])+', '+
+        flots(FDATAA[1])+' - '+
+        'Output:'+
+        flots(pOutPut.Raw[0])+' '+
+        ' Desired Output:'+
+        //TestPairs[Cnt].O.FData[0]:5:2
+         flots(FDATAA[0])
+      );
+    end;
+    finally
+       pOutPut.Free;
+       TestPairs.Free;
+       ValidationPairs.Free;
+       TrainingPairs.Free;
+       NFit.Free;    //*)
+       NN.Free;
+       //ImgTestVolumes.Free;
+       //ImgValidationVolumes.Free;
+       //ImgTrainingVolumes.Free;
+       //Terminate;
+       writeln('terminated... ');
+     end;  
+    Write('Press ENTER to exit. or just compute finished...'); 
+  end;
+  
+  procedure TTestCNNAlgoDoRun2;
+  var
+    NN: TNNet;
+    NeuralFit: TNeuralImageFit; //TNeuralImageloadingFit;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+  begin
+    if not CheckCIFARFile() then
+    begin
+      //Terminate;
+      exit;
+    end;
+    WriteLn('Creating CNeural Network...');
+    //TNNetConvolutionBase.Create36({Features=}64, {FeatureSize=}5, 
+      //                    {Padding=}2, {Stride=}1, {SuppressBias=}1);
+    NN := TNNet.Create();
+    //NN.verbose:= true;
+    NN.AddLayer( TNNetInput.Create4(32, 32, 3))
+    
+      NN.AddLayer( TNNetConvolutionLinear.Create({Features=}64, {FeatureSize=}5, 
+             {Padding=}2, {Stride=}1, {SuppressBias=}0));
+      //TNNetConvolutionReLU.Create({Features=}64, 
+        //            {FeatureSize=}5, {Padding=}2, {Stride=}1, {SuppressBias=}1),
+      NN.AddLayer( TNNetMaxPool.Create44(4,0,0));
+      NN.AddLayer( TNNetMovingStdNormalization.Create())
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3,
+                                {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3,
+                                {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3,
+                                {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3,
+                                {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetDropout.Create12(0.5,1));
+      NN.AddLayer( TNNetMaxPool.Create44(2,0,0));
+      NN.AddLayer( TNNetFullConnectLinear.Create28(10,0));
+      NN.AddLayer( TNNetSoftMax.Create());
+    //]);     //*)
+    NN.DebugStructure();
+    CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                                               ImgTestVolumes,csEncodeRGB);
+
+    //TestBatch;
+    writeln('layers count '+itoa(nn.layers.count));
+    NeuralFit := TNeuralImageFit.Create;
+    try
+      NeuralFit.FileNameBase := 'SimpleImageClassifier-'+IntToStr(GetProcessId());
+      neuralfit.verbose:= true;
+      NeuralFit.InitialLearningRate := 0.001;
+      NeuralFit.LearningRateDecay := 0.01;
+      NeuralFit.StaircaseEpochs := 10;
+      NeuralFit.Inertia := 0.9;
+      NeuralFit.L2Decay := 0.00001;
+      //Neuralfit.RunTrainingBatch(TestSize: integer);
+      writeln(botostr(Neuralfit.hasresizing));
+      //writeln(botostr(Neuralfit.count));
+      writeln('totalsize '+itoa(ImgTrainingVolumes.gettotalsize ))
+      writeln('coint '+itoa(ImgTrainingVolumes.count ))
+       NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}64, {epochs=}2);
+    
+    finally
+       NeuralFit.Free;    //*)
+   
+       NN.Free;
+       ImgTestVolumes.Free;
+       ImgValidationVolumes.Free;
+       ImgTrainingVolumes.Free;
+       //Terminate;
+     end;  
+  end;
+  
+  procedure CreatesimpleCNN;
+  var NumClasses: byte;  NN: TNNet;
+      InputVolume, PredictedVolume, vDesiredVolume: TNNetVolume;
+  //Example - How to Create Your Network
+  begin
+   NumClasses := 10;
+   NN := TNNet.Create();
+   InputVolume:=  TNNetVolume.create;
+   //inputvolume.resize
+   NN.AddLayer( TNNetInput.Create4(32,32,3) );
+   NN.AddLayer( TNNetConvolutionReLU.Create( 16,5,0,0,1) );
+   NN.AddLayer( TNNetMaxPool.Create44(2,0,0) );
+   NN.AddLayer( TNNetConvolutionReLU.Create(128,5,0,0,1) );
+   NN.AddLayer( TNNetMaxPool.Create44(2,0,0) );
+   NN.AddLayer( TNNetConvolutionReLU.Create(128,5,0,0,1) );
+   NN.AddLayer( TNNetFullConnectReLU.Create30(64,0) );
+   NN.AddLayer( TNNetFullConnect.Create27(NumClasses, 0) );
+   NN.AddLayer( TNNetSoftMax.Create());
+   NN.SetLearningRate(0.01,0.8);
+   //Example - How to Train Your Network
+  // InputVolume and vDesiredVolume are of the type TNNetVolume
+   NN.DebugStructure();
+   //NN.SaveDataToString;
+   //inputvolume.loadfromstring
+   //Function LoadImageFromFileIntoVolume( ImageFileName : string; V : TNNetVolume) : boolean');
+   //LoadImageFromFileIntoVolume(exepath+'data_batch_1.bin', InputVolume);
+   //CreateVolumesFromImagesFromFolder
+   //CreateCifar10Volumes(inputvolume, nil, nil,csEncodeRGB);
+   NN.Compute65(InputVolume, 0);
+   //NN.GetOutput(PredictedVolume);
+   //vDesiredVolume.SetClassForReLU(DesiredClass);
+   //NN.Backpropagate69(vDesiredVolume);
+   InputVolume.Free;
+   writeln('InputVolume.Free;')
+   writeln(flots(PI));
+   //LoadLibrary
+  end; 
+  
+  
+function TCustomApplicationFindOptionIndex(const S: String;
+  var Longopt: Boolean; StartAt: Integer): Integer;
+
+Var
+  SO,O : String;
+  I,P : Integer;
+  CaseSensitiveOptions: Boolean;
+   Params: array of string;
+   FEventLogFilter: TEventLogTypes;
+    FExceptObjectJS: JSValue;
+    FOnException: TExceptionEvent;
+    FTerminated: Boolean;
+    FTitle: String;
+    FOptionChar: Char;
+    FCaseSensitiveOptions: Boolean;
+    FStopOnException: Boolean;
+    FExceptionExitCode: Integer;
+    FExceptObject: Exception;
+
+begin
+  If Not CaseSensitiveOptions then
+    SO:=UpperCase(S)
+  else
+    SO:=S;
+  Result:=-1;
+  I:=StartAt;
+  if I=-1 then
+    I:=ParamCount;
+  While (Result=-1) and (I>0) do
+    begin
+    O:=Params[i];
+    // - must be seen as an option value
+    If (Length(O)>1) and (O[1]=FOptionChar) then
+      begin
+      Delete(O,1,1);
+      LongOpt:=(Length(O)>0) and (O[1]=FOptionChar);
+      If LongOpt then
+        begin
+        Delete(O,1,1);
+        P:=Pos('=',O);
+        If (P<>0) then
+          O:=Copy(O,1,P-1);
+        end;
+      If Not CaseSensitiveOptions then
+        O:=UpperCase(O);
+      If (O=SO) then
+        Result:=i;
+      end;
+    Dec(i);
+    end;
+end;
+  
+function TCustomApplicationHasOption(const S,abs: String): Boolean;
+Var
+  aB : Boolean;
+begin
+  Result:=TCustomApplicationFindOptionIndex(S,aB,0)<>-1;
+end;
+
+function TCustomApplicationGetOptionValue(const C: Char; const S: String
+  ): String;
+
+Var
+  B : Boolean;
+  I : integer;
+  capp: TCustomApplication;
+
+begin
+  capp:= TCustomApplication.create(self);
+  Result:='';
+  //I:=TCustomApplicationFindOptionIndex(C,B,0);
+  //capp.GetOptionValues
+  I:=capp.FindOptionIndex(C,B,0);
+   If I=-1 then
+    //I:=TCustomApplicationFindOptionIndex(S,B,0);
+    I:=capp.FindOptionIndex(S,B,0);
+  //If I<>-1 then
+    //Result:=capp.GetOptionAtIndex(I,B);
+  capp.Free;  
+end;
+
+{/// Convolutional layer without activation function.
+  TNNetConvolutionLinear = class(TNNetConvolution)
+  public
+    constructor Create(pNumFeatures, pFeatureSize, pInputPadding, pStride: integer; pSuppressBias: integer = 0); override;
+  end;
+  
+  missing: (*----------------------------------------------------------------------------*)
+procedure SIRegister_TNNetConvolutionLinear(CL: TPSPascalCompiler);
+begin
+  //with RegClassS(CL,'TNNetConvolution', 'TNNetConvolutionLinear') do
+  with CL.AddClassN(CL.FindClass('TNNetConvolution'),'TNNetConvolutionLinear') do
+  begin
+  end;
+end;
+
+ RegisterVirtualConstructor(@TNNetConvolutionBaseCreate36_P, 'Create36');
+   set to RegisterConstructor
+  
+  }
+
+procedure ReluTestingRunAlgo(ialgo: integer);
+var NumClasses, aialgo: integer;
+   fileNameBase: string;
+  NN : TNNet;
+  NeuralFit: TNeuralImageFit;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+    Volume: TNNetVolume;
+    //NumClasses: integer;
+    //fileNameBase: string;
+    TA,TB,TC: TNNetLayer;
+    TD: TNNetLayerFullConnectReLU;
+    TF: TNNetConvolution ;
+    netsoft:TNNetSoftMax;
+    farr: TNeuralFloatarray;
+    farr2: TNeuralFloatDynArr;
+    //TNNetLayerFullConnect = class(TNNetFullConnect);
+begin
+   NumClasses  := 10;
+    NN := TNNet.Create();
+    fileNameBase := 'autosave-neuralnetwork_a'+IntToStr(iAlgo);
+
+    try
+    case iAlgo of
+      1:
+      begin
+        //RELU TESTING
+        TA:= NN.AddLayer(TNNetInput.Create4(32, 32, 3));
+        //TA := NN.AddLayer(TNNetInput.Create4(32, 32, 3));
+        {TF:=} NN.AddLayer(TNNetConvolutionReLU.Create(16, 5, 0, 0,1));
+        //TB:= NN.AddLayer(TNNetMaxPool.Create44(2,0,0));
+        TC:= NN.AddLayer(TNNetConvolutionReLU.Create(128, 5, 0, 0,1));
+        NN.AddLayer(TNNetMaxPool.Create44(2,0,0));
+        //NN.AddLayer(TNNetConvolutionReLU.Create(128, 5, 0, 0,1));
+        //     NN.AddLayer(TNNetLayerFullConnectReLU.Create30(64,0));
+     
+        //NN.AddLayer(TNNetFullConnectReLU.Create30(64,10));
+        NN.AddLayer(TNNetFullConnectReLU.Create28(64,10));
+        NN.AddLayer(TNNetFullConnectLinear.Create27(NumClasses,10));
+        NN.AddLayer(TNNetSoftMax.Create());
+        writeln('layers '+itoa(NN.layers));
+        //TNNetSoftMax.Create().compute();
+        //netsoft:= TNNetSoftMax.Create()
+        //netsoft.compute();
+        
+        //TF:= TNNetConvolution.create36(16, 5, 0, 0,1); 
+        //TF.compute();
+        //TB.compute();
+        //TNNetFullConnectLinear.create28();
+        writeln('choosen '+itoa(ialgo));
+      end;
+      2: writeln('no more');
+     end;
+     
+     NN.DebugStructure(); 
+    //NN.Compute63(ImgTestVolumes, ImgTestVolumes64);
+    
+     CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                               ImgTestVolumes,csEncodeRGB);
+                               
+      writeln('totalsize '+itoa(ImgTrainingVolumes.gettotalsize ))
+      writeln('coint '+itoa(ImgTrainingVolumes.count ))
+      
+       with TVolume.create() do begin
+       //setlength(farr, 3)
+       //setlength(raw, 3)
+        // setlength(fdata, 3)
+         farr:= fdata;
+        //farr[1]:= 6757.90;
+        //farr[2]:= 556757.90;
+        //raw[0]:= 6757.90;
+        //raw[1]:= 6757.90;
+        //raw[2]:= 556757.90;
+        //fdAta[1]:= farr;
+          //fdAta[0]:= 6767.8989;
+        //farr:= fdata[1];
+        //writeln(floattostr(fdata[1]));
+        free
+      end;  
+   
+     NeuralFit := TNeuralImageFit.Create;
+     NeuralFit.FileNameBase := fileNameBase;
+     NeuralFit.InitialLearningRate := 0.001; //0.001;
+     NeuralFit.Inertia := 0.2;;
+     NeuralFit.TargetAccuracy := 0.8;
+     neuralfit.verbose:= True;
+     writeln('momentum '+floattostr(neuralfit.momentum))
+     //procedure TestDataParallelism(NN: TNNet);
+     TestDataParallelism(NN);
+     //TestConvolutionAPI ;
+      //NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, 
+        //          ImgTestVolumes, NumClasses, {batchsize=}128, {epochs=}2);
+                  //ImgTestVolumes, NumClasses, {batchsize=}256, {epochs=}1);
+                    
+     //CreateTokenizedStringList                
+    
+    finally
+       NeuralFit.Free;    //*)
+   
+       NN.Free;
+       ImgTestVolumes.Free;
+       ImgValidationVolumes.Free;
+       ImgTrainingVolumes.Free;
+       //Terminate;
+       writeln('3 Volumes + NN freed...')
+     end;                              
+      //SyncWideInputQuery
+      //DarkenColor
+      //TCommandLineReader
+      //TCustomApplication 
+      {with TVolume.create() do begin
+      farr[1]:= 6757.90;
+      farr[2]:= 556757.90;
+      fdAta[1]:=farr;
+        //writeln(floattostr(Fdata[1]));
+        free
+      end;}  
+  end;  
+  
+type TBackInput  = array[0..3] of array[0..1] of TNeuralFloat;
+type TBackOutput = array[0..3] of array[0..2] of TNeuralFloat;
+
+// var  Inputs: TBackInput;
+  //    rOutput: TBackOutput;
+ 
+ {
+const inputs : TBackInput =
+  ( // x1,   x2
+    ( 0.1,  0.1), // False, False
+    ( 0.1,  0.9), // False, True
+    ( 0.9,  0.1), // True,  False
+    ( 0.9,  0.9)  // True,  True
+  );
+
+const reluoutputs : TBackOutput =
+  (// XOR, AND,   OR
+    ( 0.1, 0.1, 0.1),
+    ( 0.8, 0.1, 0.8),
+    ( 0.8, 0.1, 0.8),
+    ( 0.1, 0.8, 0.8)
+  );  }
+  
+  procedure definelogicalMatrix(var inputs:TBackInput; var routput:TBackOutput);
+  begin
+    Inputs[0][0]:= 0.1; Inputs[0][1]:= 0.1;   
+    Inputs[1][0]:= 0.1; Inputs[1][1]:= 0.9;   
+    Inputs[2][0]:= 0.9; Inputs[2][1]:= 0.1;   
+    Inputs[3][0]:= 0.9; Inputs[3][1]:= 0.9;   
+    
+    routput[0][0]:= 0.1; routput[0][1]:= 0.1;  routput[0][2]:= 0.1;      
+    routput[1][0]:= 0.8; routput[1][1]:= 0.1;  routput[1][2]:= 0.8;      
+    routput[2][0]:= 0.8; routput[2][1]:= 0.1;  routput[2][2]:= 0.8;      
+    routput[3][0]:= 0.1; routput[3][1]:= 0.8;  routput[3][2]:= 0.8;      
+   end;
+ {   :
+  ( 0.1,  0.1), // False, False
+    ( 0.1,  0.9), // False, True
+    ( 0.9,  0.1), // True,  False
+    ( 0.9,  0.9)  // True,  True   }
+  
+  procedure RunSimpleAlgo();
+  var
+    NN: TNNet;
+    EpochCnt: integer;
+    Cnt: integer;
+    pOutPut: TNNetVolume;
+    vInputs: TBackInput;
+    vOutput: TBackOutput;
+    inputs: TBackInput;  routput : TBackOutput;
+    Rate, Loss, ErrorSum : TNeuralFloat;
+  begin
+   definelogicalMatrix(inputs, routput);
+    NN := TNNet.Create();
+    NN.AddLayer( TNNetInput.Create3(2) );
+    NN.AddLayer( TNNetFullConnectReLU.Create30(3,0) );
+    NN.AddLayer( TNNetFullConnectReLU.Create30(3,0) );       
+    NN.SetLearningRate(0.01, 0.9);
+
+    vInputs := inputs;
+    vOutput := routput;
+  //constructor Create(pSizeX, pSizeY, pDepth: integer; c: T = 0); {$IFNDEF FPC} overload; {$ENDIF}
+    pOutPut := TNNetVolume.Create0(3,1,1,1);
+    for EpochCnt := 1 to 5000 do begin
+      for Cnt := Low(inputs) to High(inputs) do begin
+        NN.Compute68(vInputs[Cnt],0);
+        NN.GetOutput(pOutPut);
+        NN.Backpropagate70(vOutput[Cnt]);
+        if EpochCnt mod 300 = 0 then
+        WriteLn
+        (
+          itoa(EpochCnt)+' x '+itoa(Cnt)+
+          ' Output:'+
+          format(' %5.2f',[poutPut.Raw[0]])+' '+
+          format(' %5.2f',[poutPut.Raw[1]])+' '+
+          format(' %5.2f',[poutPut.Raw[2]])+' '+
+         (* pOutPut.Raw[1]:5:2,' ',
+          pOutPut.Raw[2]:5:2, *)
+          ' - Training/Desired Output:'+
+          format('%5.2f',[vOutput[cnt][0]])+' '+
+          format('%5.2f',[vOutput[cnt][1]])+' '+
+          format('%5.2f',[vOutput[cnt][2]])+' '
+          {vOutput[cnt][0]:5:2,' ',
+          vOutput[cnt][1]:5:2,' ' ,
+          vOutput[cnt][2]:5:2,' ' }
+        );  
+      end;
+      if EpochCnt mod 300 = 0 then WriteLn('');
+    end;
+    // TestBatch( NN, pOutPut, 10000,  Rate, Loss, ErrorSum);
+     
+    //NN.DebugWeights();
+    NN.DebugErrors();
+    pOutPut.Free;
+    NN.Free;
+    Write('Press ENTER to exit.');
+    //ReadLn;
+  end;
+
+  
+  procedure TTestCNNAlgoDoRunClassifier89;
+ //Application.Title:='CIFAR-10 SELU Classification Example';
+  var
+    NN: THistoricalNets;
+    NN2: TNNet;
+    NeuralFit: TNeuralImageFit;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+    Rate, Loss, ErrorSum : TNeuralFloat;
+  begin
+    if not CheckCIFARFile() then begin
+      //Terminate;
+      //exit;
+      memo2.lines.add('TNNetConvolutionLinear CIFAR-10 Files missing!')
+    end;
+    WriteLn('Creating Neural Network...');
+    NN:= THistoricalNets.Create();
+    //TestDataParallelism( NN);
+
+    NN.AddLayer(TNNetInput.Create4(32, 32, 3) );
+    //Function InitSELU( Value : TNeuralFloat) : TNNetLayer');
+    NN.AddLayer(TNNetConvolutionLinear.Create(64,5,2,1,1)).InitSELU(0).InitBasicPatterns();
+    NN.AddLayer( TNNetMaxPool.Create44(4,0,0) );
+    // NN.AddLayer( TNNetMaxPool.Create(4) );
+    NN.AddLayer( TNNetSELU.Create() );
+    NN.AddLayer( TNNetMovingStdNormalization.Create() );
+    NN.AddLayer( TNNetConvolutionLinear.Create(64,3,1,1,1)).InitSELU(0);
+    NN.AddLayer( TNNetSELU.Create() );
+    NN.AddLayer( TNNetConvolutionLinear.Create(64,3,1,1,1)).InitSELU(0);
+    NN.AddLayer( TNNetSELU.Create() );
+    NN.AddLayer( TNNetConvolutionLinear.Create(64,3,1,1,1)).InitSELU(0);
+    NN.AddLayer( TNNetSELU.Create() );
+    NN.AddLayer( TNNetConvolutionLinear.Create(64,3,1,1,1)).InitSELU(0);
+    NN.AddLayer( TNNetDropout.Create12(0.5,1) );
+    NN.AddLayer( TNNetMaxPool.Create44(2,0,0) );
+    NN.AddLayer( TNNetSELU.Create() );
+    NN.AddLayer( TNNetFullConnectLinear.Create28(10,0) );
+    {NN.AddLayer( TNNetDropout.Create(0.5) );
+    NN.AddLayer( TNNetMaxPool.Create(2) );
+    NN.AddLayer( TNNetSELU.Create() );
+    NN.AddLayer( TNNetFullConnectLinear.Create(10) );}
+    NN.AddLayer( TNNetSoftMax.Create() );
+    memo2.lines.add('TNNetConvolutionLinear model add')
+    TestDataParallelism( NN);   
+    memo2.lines.add('TestDataParallelism( NN) passed')
+    CheckCIFARFile()
+    try
+     CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes,
+                                          ImgTestVolumes, csEncodeRGB);
+    except
+      memo2.lines.add('TNNetConvolutionLinear CIFAR Files missing!')
+    end;
+    NeuralFit:= TNeuralImageFit.Create;
+    NeuralFit.FileNameBase:= 'ImageClassifierSELU_Tutor89_5';
+    NeuralFit.InitialLearningRate:= 0.0004; 
+         // SELU seems to work better with smaller learning rates.
+    NeuralFit.LearningRateDecay:= 0.03;
+    NeuralFit.StaircaseEpochs:= 10;
+    NeuralFit.Inertia:= 0.9;
+    NeuralFit.L2Decay:= 0.00001;
+    NeuralFit.verbose:= true;
+    try
+      NN.DebugStructure();
+      nn.debugweights;
+     // Procedure TestBatch( NN : TNNet; ImgVolumes : TNNetVolumeList; SampleSize : integer; out Rate, Loss, ErrorSum : TNeuralFloat)');
+ //Procedure TranslateCifar10VolumesToMachineAnimal( VolumeList : TNNetVolumeList)');
+     writeln('volume list '+objtostr( ImgTestVolumes));
+    //TranslateCifar10VolumesToMachineAnimal(ImgTestVolumes);
+      //ImgTestVolumes:= TNNetVolumeList.create(self);
+      //TestBatch( NN, ImgTestVolumes, 10000,  Rate, Loss, ErrorSum);
+      writeln(format(' rate %4.2f loss %4.2f errorsum %4.2f ',
+                                     [Rate, Loss, ErrorSum])); 
+      NN.DebugWeights();
+      //NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes,      
+        //         ImgTestVolumes, {NumClasses=}10,{batchsize=}64,{epochs=}3);
+      //TestBatch( NN, ImgTestVolumes, 10000,  Rate, Loss, ErrorSum);            
+    finally  
+      NeuralFit.Free;
+      NN.Free;
+      ImgTestVolumes.Free;
+      ImgValidationVolumes.Free;
+      ImgTrainingVolumes.Free;
+      //Terminate;
+      writeln('3 Volumes + NN + NF freed...')
+    end;  
+  end;
+
+  
+  
+  procedure ReluTestingRunAlgo2(ialgo: integer);
+var NumClasses, aialgo: integer;
+   fileNameBase: string;
+  NN : TNNet;
+  NeuralFit: TNeuralImageFit; //TNeuralFit;
+  ImgTrainingVolumes,ImgValidationVolumes,ImgTestVolumes: TNNetVolumeList; //PairList;
+    Volume: TNNetVolume;
+    //NumClasses: integer;
+    //fileNameBase: string;
+    TA,TB,TC: TNNetLayer;
+    TD: TNNetLayerFullConnectReLU;
+    TF: TNNetConvolution ;
+    netsoft:TNNetSoftMax;
+     Rate, Loss, ErrorSum : TNeuralFloat;
+    //TNNetLayerFullConnect = class(TNNetFullConnect);
+begin
+   NumClasses  := 10;
+    NN := TNNet.Create();
+    fileNameBase := 'autosave-neuralnetwork_a'+IntToStr(iAlgo);
+
+    try
+    case iAlgo of
+      1:
+      begin
+        //RELU TESTING
+        TA:= NN.AddLayer(TNNetInput.Create4(32, 32, 3));
+        //TA := NN.AddLayer(TNNetInput.Create4(32, 32, 3));
+        {TF:=} NN.AddLayer(TNNetConvolutionReLU.Create(16, 5, 0, 0,1));
+        TB:= NN.AddLayer(TNNetMaxPool.Create44(2,0,0));
+        TC:= NN.AddLayer(TNNetConvolutionReLU.Create(128, 5, 0, 0,1));
+        //NN.AddLayer(TNNetMaxPool.Create44(2,0,0));
+        //NN.AddLayer(TNNetConvolutionReLU.Create(128, 5, 0, 0,1));
+        //     NN.AddLayer(TNNetLayerFullConnectReLU.Create30(64,0));
+     
+        //NN.AddLayer(TNNetFullConnectReLU.Create30(64,10));
+        NN.AddLayer(TNNetFullConnectReLU.Create28(64,2));
+        NN.AddLayer(TNNetFullConnectLinear.Create27(NumClasses,10));
+        NN.AddLayer(TNNetSoftMax.Create());
+        writeln('layers '+itoa(NN.layers));
+        //TNNetSoftMax.Create().compute();
+        //netsoft:= TNNetSoftMax.Create()
+        //netsoft.compute();
+        
+        //TF:= TNNetConvolution.create36(16, 5, 0, 0,1); 
+        //TF.compute();
+        //TB.compute();
+        //TNNetFullConnectLinear.create28();
+        writeln('choosen '+itoa(ialgo));
+      end;
+      2: writeln('no more');
+     end;
+     
+    //NN.DebugStructure(); 
+    
+     CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                               ImgTestVolumes,csEncodeRGB);
+                               
+      //writeln('totalsize '+itoa(ImgTrainingVolumes.gettotalsize ))
+      //writeln('coint '+itoa(ImgTrainingVolumes.count ))
+   
+     NeuralFit := TNeuralImageFit.Create;
+     NeuralFit.FileNameBase := fileNameBase;
+     NeuralFit.InitialLearningRate := 0.001;;
+     NeuralFit.Inertia := 0.2;;
+     NeuralFit.TargetAccuracy := 0.8;
+     //NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, 
+       //            ImgTestVolumes, {NumClasses=}10,{batchsize=}64,{epochs=}1);
+                            //{batchsize=}128, {epochs=}2);
+     //TestBatch( NN, ImgTestVolumes, 1000,  Rate, Loss, ErrorSum);          
+                     
+     //CreateTokenizedStringList   
+     //neuralfit.runtestbatch             
+     neuralfit.TrainingAccuracy;             
+    
+    finally
+       NeuralFit.Free;    //*)
+   
+       NN.Free;
+       ImgTestVolumes.Free;
+       ImgValidationVolumes.Free;
+       ImgTrainingVolumes.Free;
+       //Terminate;
+     end;                              
+      //SyncWideInputQuery
+      //DarkenColor
+      //TCommandLineReader
+      //TCustomApplication 
+  end;  
+  
+ //https://sourceforge.net/p/cai/svncode/HEAD/tree/trunk/lazarus/experiments/visualCifar10test/uvisualcifar10test.pas
+  
+procedure TFormVisualLearningLearn(Sender: TObject);
+ var
+  NN: TNNet;
+  I: integer;
+  ImgVolumes: TNNetVolumeList;
+  Volume: TNNetVolume;
+  pOutput, vOutput, vDisplay: TNNetVolume;
+  hit, miss: integer;
+  NumClasses: integer;
+  ErrorSum, LastError: TNeuralFloat;
+  startTime, totalTimeSeconds: double;
+  aImage: array of TImage;
+  NeuronCount: integer;
+  ImgIdx: integer;
+  MaxW, MinW: TNeuralFloat;
+  fileName: string;
+  firstNeuronalLayer: integer;
+  OpenDialogNN: TOpendialog;
+    FormVisualLearning: TForm;
+  FRunning: boolean;
+      ButTest: TButton;
+    EdTestBinFile: TEdit;
+    ImgSample: TImage;
+    LabClassRate: TLabel;
+    LabTestFile: TLabel;
+    //OpenDialogNN: TOpenDialog;
+
+
+begin
+  writeln('Creating Neural Network...');
+  ImgVolumes := TNNetVolumeList.Create(true);
+  NumClasses := 10;
+  frunning:= true;
+
+  fileName := 'cnnmyvisualfilename.nn' ;//OpenDialogNN.FileName; //FormVisualLearning: TForm;
+
+  //--------------------------------------------------------------------
+  // creates required volumes to store images
+  for I := 0 to 9999 do begin
+    Volume := TNNetVolume.Create();
+    ImgVolumes.Add(Volume);
+  end;
+  //--------------------------------------------------------------------
+
+  NN := TNNet.Create();
+  //nn.verbose:= true;
+  
+  FormVisualLearning:= TForm.create(self);
+  FormVisualLearning.setbounds(100,100,400,400)
+  FormVisualLearning.show;
+  ImgSample:= TImage.create(self);
+  imgsample.align:= alclient;
+  try
+  writeln('Loading neural network from file: '+fileName);
+  NN.LoadFromFile('C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin\ImageClassifierSELU_Tutor89.nn');
+  NN.EnableDropouts(false);
+  firstNeuronalLayer := NN.GetFirstNeuronalLayerIdx(1);
+
+  pOutput := TNNetVolume.Create0(NumClasses,1,1,0);
+  vOutput := TNNetVolume.Create0(NumClasses,1,1,0);                 
+  vDisplay:= TNNetVolume.Create0(NumClasses,1,1,0);
+
+  SetLength(aImage, NN.Layers[firstNeuronalLayer].Neurons.Count);
+
+  for NeuronCount := 0 to NN.Layers[firstNeuronalLayer].Neurons.Count - 1 do
+  begin
+    aImage[NeuronCount] := TImage.Create(FormVisualLearning);
+    aImage[NeuronCount].Parent := FormVisualLearning;
+    aImage[NeuronCount].Width  := NN.Layers[firstNeuronalLayer].Neurons[NeuronCount].Weights.SizeX;
+    aImage[NeuronCount].Height := NN.Layers[firstNeuronalLayer].Neurons[NeuronCount].Weights.SizeY;
+    aImage[NeuronCount].Top    := (NeuronCount div 12) * 36 + 120;
+    aImage[NeuronCount].Left   := (NeuronCount mod 12) * 36 + 32;
+    aImage[NeuronCount].Stretch:=true;
+  end;
+
+  NN.DebugWeights();
+  WriteLn('Neural network has: ');
+  WriteLn(' Layers: '+itoa(  NN.CountLayers() ) );
+  WriteLn(' Neurons:'+itoa(  NN.CountNeurons() ));
+  WriteLn(' Weights:' +itoa (NN.CountWeights() ));
+  WriteLn('Computing...');
+
+  begin
+    hit  := 0;
+    miss := 0;
+    ErrorSum := 0;
+    LastError := 0;
+    startTime := Now();
+    //loadCifar10Dataset(ImgVolumes, 
+      //     'C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin\data_batch_2.bin',0,csEncodeRGB);
+    loadCifar10Dataset6(ImgVolumes, 1,0,csEncodeRGB);
+    //for I := 0 to ImgVolumes.Count - 1 do
+    writeln('volume count '+itoa(imgvolumes.count ));
+    for I := 0 to 5000 do
+    begin
+      if not(FRunning) then Break;
+      ImgIdx := Random(ImgVolumes.Count);
+      //-- CAREFUL
+      NN.Compute65(ImgVolumes[ImgIdx],0);
+      NN.GetOutput(pOutput);
+      //showmessage('this1 running')
+
+      vOutput.SetClassForReLU( ImgVolumes[ImgIdx].Tag ); // ReLU - no softmax
+      ErrorSum := errorsum+ vOutput.SumDiff(pOutput);
+
+      if I mod 1000 = 0 then
+      begin
+        vDisplay.Copy38(ImgVolumes[ImgIdx]);
+        vDisplay.Mul26(64);
+        vDisplay.Add13(128);
+
+        LoadVolumeIntoTImage(vDisplay, ImgSample, csEncodeRGB);
+        ImgSample.Width := 64;
+        ImgSample.Height := 64;
+
+        for NeuronCount := 0 to NN.Layers[firstNeuronalLayer].Neurons.Count - 1 do
+        begin
+          MaxW := NN.Layers[firstNeuronalLayer].Neurons[NeuronCount].Weights.GetMax();
+          MinW := NN.Layers[firstNeuronalLayer].Neurons[NeuronCount].Weights.GetMin();
+          vDisplay.Copy38(NN.Layers[firstNeuronalLayer].Neurons[NeuronCount].Weights);
+          vDisplay.Mul26(256/(MaxW-MinW));
+          vDisplay.Add13(128);
+          LoadVolumeIntoTImage(vDisplay, aImage[NeuronCount], csEncodeRGB);
+          aImage[NeuronCount].Width := 32;
+          aImage[NeuronCount].Height := 32;
+          writeln('neuron count: '+itoa(neuroncount));
+        end;
+
+        Application.ProcessMessages();
+      end;
+
+      Application.ProcessMessages();
+
+      if pOutput.GetClass() = ImgVolumes[ImgIdx].Tag then
+      begin
+        Inc(Hit);
+      end
+      else
+      begin
+        Inc(Miss);
+      end;
+
+      if (Hit>0) and (I>0) and ((I+1) mod 1000 = 0) then
+      begin
+        totalTimeSeconds := (Now() - startTime) * 24 * 60 * 60;
+        WriteLn (
+         ''+
+          itoa(I+1)+ ' Accuracy:'+flots( Hit/(Hit+Miss))+
+          ' Error:'+flots(ErrorSum-LastError)+
+          ' Time:'+ flots(totalTimeSeconds)+'s'+
+          ' Forward:'+flots (NN.ForwardTime * 24 * 60 * 60)+'s'+
+          ' Backward:'+flots(NN.BackwardTime * 24 * 60 * 60)+'s' //  *)
+        );
+        NN.ClearTime();
+
+        //LabClassRate.Caption := IntToStr( (Hit*100) div (Hit+Miss) )+'%';
+        writeln(IntToStr( (Hit*100) div (Hit+Miss) )+'%');
+
+        startTime := Now();
+        LastError := ErrorSum;
+        Application.ProcessMessages;
+      end;
+
+    end;
+
+    NN.DebugWeights();
+  end;
+
+  for NeuronCount := Low(aImage) to High(aImage) do
+  begin
+    aImage[NeuronCount].Free;
+  end;
+
+  //LabClassRate.Caption := '0%';
+  //writeln(LabClassRate.Caption := '0%';
+  finally
+     vDisplay.Free;
+     NN.Free;
+     vOutput.Free;
+     pOutput.Free;
+     ImgVolumes.Free;
+     ImgSample.Free;
+     FormVisualLearning.Free;
+     writeln('free neuralnet and volumes');
+  end;
+end;
+ 
+ 
+  
+   { testcnnalgo }
+   //https://sourceforge.net/p/cai/svncode/HEAD/tree/trunk/lazarus/experiments/testcnnalgo/testcnnalgo.lpr
+  procedure TTestCNNAlgoDoRunTester;
+  var
+    Algo, LearningRate, Inertia, Target: string;
+    iAlgo: integer;
+    fLearningRate, fInertia, fTarget: single;
+    //atx:TExternalTool; 
+    //cust: TCustomApplication ;
+  begin
+    // quick check parameters
+    // parse parameters
+    {if HasOption('h', 'help') then
+    begin
+      WriteHelp;
+    end; }
+
+    fLearningRate := 0.001;
+    if TCustomApplicationHasOption('l', 'learningrate') then
+    begin
+      LearningRate := TCustomApplicationGetOptionValue('l', 'learningrate');
+      fLearningRate := StrToFloat(LearningRate);
+    end;
+
+    fInertia := 0.9;
+    if TCustomApplicationHasOption('i', 'inertia') then
+    begin
+      Inertia := TCustomApplicationGetOptionValue('i', 'inertia');
+      fInertia := StrToFloat(Inertia);
+    end;
+
+    fTarget := 0.8;
+    if TCustomApplicationHasOption('t', 'target') then
+    begin
+      Target := TCustomApplicationGetOptionValue('t', 'target');
+      fTarget := StrToFloat(Target);
+    end;
+
+    if TCustomApplicationHasOption('a', 'algo') then
+    begin
+      Algo := TCustomApplicationGetOptionValue('a', 'algo');
+      Writeln('Running algorithm:['+itoa(iAlgo)+']');
+      iAlgo := StrToInt(Algo);
+
+      if (iAlgo > 0) and (iAlgo < 14) then
+      begin
+        //RelutestingRunAlgo(iAlgo, fLearningRate, fInertia, fTarget);
+        RelutestingRunAlgo(iAlgo);
+      end
+      else
+      begin
+        WriteLn('Bad algorithm number:'+itoa(iAlgo));
+      end;
+    //end
+    end
+    else
+    begin
+      {$IFDEF Release}
+      WriteHelp;
+      Write('Press ENTER to quit.');
+      ReadLn();
+      {$ELSE}
+      iAlgo := 3;
+      //TCustomApplicationRunAlgo(iAlgo, fLearningRate, fInertia, fTarget);
+      {$ENDIF}
+    end;
+
+    //Terminate;
+    //Exit;
+  end;
+  
+type  TTInyImageFile = file; // of TTinyImage;
+  TCifar100File = file; // of TCifar100Image;
+  
+  // loads a CIFAR10 into TNNetVolumeList
+procedure loadCifar10Dataset2(ImgVolumes: TNNetVolumeList; fileName:string; 
+                  base_pos:integer {= 0}; color_encoding: byte {= csEncodeRGB});
+var
+  I, ImgPos: integer;
+  Img: TTinyImage;
+  cifarFile: TTInyImageFile;
+  AuxVolume: TNNetVolume;
+  pMin, pMax: TNeuralFloat;
+  globalMin0, globalMax0: TNeuralFloat;
+  globalMin1, globalMax1: TNeuralFloat;
+  globalMin2, globalMax2: TNeuralFloat;
+
+begin
+  maxForm1.memo2.lines.Add('Loading 10K images from file "'+fileName+'" ...');
+  AssignFile(cifarFile, fileName);
+  Reset(cifarFile);
+  AuxVolume := TNNetVolume.Create();
+
+  globalMin0 := 0;
+  globalMax0 := 0;
+  globalMin1 := 0;
+  globalMax1 := 0;
+  globalMin2 := 0;
+  globalMax2 := 0;
+
+  // binary CIFAR 10 file contains 10K images
+  for I := 0 to 9999 do
+  begin
+    // Read(cifarFile, Img);
+    //assignfileRead(cifarFile, Img);
+    //AssignFileRead(var mystring, myfilename:Str);
+    //img.assignfile
+    ImgPos := I + base_pos;
+    LoadTinyImageIntoNNetVolume1(Img, ImgVolumes[ImgPos]);
+
+    if (color_encoding = csEncodeGray) then
+    begin
+      AuxVolume.Copy76(ImgVolumes[ImgPos]);
+      ImgVolumes[ImgPos].GetGrayFromRgb(AuxVolume);
+    end;
+
+    ImgVolumes[ImgPos].RgbImgToNeuronalInput(color_encoding);
+
+    ImgVolumes[ImgPos].GetMinMaxAtDepth(0, pMin, pMax); 
+    //WriteLn  (I:8,' - #0 Min:',pMin, ' Max:',pMax);
+
+    globalMin0 := {Math.}MinF(pMin, globalMin0);
+    globalMax0 := {Math.}MaxF(pMax, globalMax0);
+
+    if (ImgVolumes[ImgPos].Depth >= 2) then
+    begin
+      ImgVolumes[ImgPos].GetMinMaxAtDepth(1, pMin, pMax); 
+      //Write  (' #1 Min:',pMin, ' Max:',pMax);
+
+      globalMin1 := {Math.}MinF(pMin, globalMin1);
+      globalMax1 := {Math.}MaxF(pMax, globalMax1);
+    end;
+
+    if (ImgVolumes[ImgPos].Depth >= 3) then
+    begin
+      ImgVolumes[ImgPos].GetMinMaxAtDepth(2, pMin, pMax); 
+      //WriteLn(' #2 Min:',pMin, ' Max:',pMax);
+
+      globalMin2 := {Math.}MinF(pMin, globalMin2);
+      globalMax2 := {Math.}FMax(pMax, globalMax2);
+    end;
+  end;
+
+  //Write(' GLOBAL MIN MAX ', globalMin0:8:4,globalMax0:8:4,globalMin1:8:4,globalMax1:8:4,globalMin2:8:4,globalMax2:8:4);
+  maxForm1.memo2.lines.Add(' GLOBAL MIN MAX '+
+           floattostr(globalMin0)+'  '+floattostr(globalMax0));
+  AuxVolume.Free;
+  CloseFile(cifarFile);
+  maxForm1.memo2.lines.Add(' Done...');
+end;
+
+
+
+
+ var   st : string;
+    f1,f2 : double; 
+    var A, B : TVectorClass;  ax: TExtendedArray;   aint64, aint64_: TInt64ArrayClass;
+    NN : TNNet;   NumClasses: integer;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+    NeuralFit : TNeuralImageFit;  fLearningRate: double;
+    
+     TrainingPairs, ValidationPairs, TestPairs :TNNetVolumePairList;
+     ImgVolumes: TNNetVolumeList; 
+
+  //PythonEngine1.Free;
+  //myloadscript2:= filetostring(PYSCRIPT2);
+  
+  begin   //@main
+ { 
+ with TPythonEngine.Create(Nil) do begin
+  pythonhome:= 'C:\Users\breitsch\AppData\Local\Programs\Python\Python37-32\';
+  try
+    loadDLL;
+    Println('Decimal: '+ 
+          EvalStr('__import__("decimal").Decimal(0.1)')); 
+  except
+    raiseError;        
+  finally       
+    free;
+  end; 
+ end;   }
+  
+   with TNNetDictionary.create(100) do begin
+     AddWordToDictionary('this bosx')
+     //StringToVolume
+     free
+   end;  
+   
+  TestVectorClass;
+  
+  //with TExtendedArray.create([]) do begin
+    //assign
+  //end; 
+  
+  ax:= TExtendedArray.create([]);
+  ax.appenditem(PI)
+  //ax.free;
+  
+  aint64:= TInt64ArrayClass.Create([1234]);
+  //aint64.clear;
+  //aint64.free;
+  aint64_:= TInt64ArrayClass.Create([12345678]);
+  
+ with TVectorClass.create([80.0]) do begin
+    //createinstance
+    //add(3500.9958)
+     add(3500.0)
+     add(3500.0)
+     //add TInt64ArrayClass
+     add6 (aint64);
+     add6 (aint64_);
+     add7(ax);
+    writeln(floattostr(PI));
+    add(PI)
+    writeln('sum '+floattostr(sum));
+    writeln('count '+itoa(count));
+    //writeln(data)
+   
+    free;
+  end;  //}
+  
+  aint64.clear;
+  aint64.free;
+  aint64_.free;
+  ax.clear;
+  ax.Free;
+  
+  {with TVectorClass.create do begin
+    //createinstance
+    //add(3500.9958)
+     add(3500.0)
+     //add6
+    writeln(floattostr(PI));
+    add(PI)
+    writeln('sum '+floattostr(sum));
+   
+    //free;
+  end;  //}
+ 
+  A := TVectorClass.Create([]);
+  B := TVectorClass.Create([]);
+  A.Free;
+  B.Free;
+  
+  TestKMeans2;
+  //TestTNNetVolume;
+  //LoadPictureIntoVolume
+  
+  writeln(floattostr(SoftmaxDerivative( 0.087879))); 
+   writeln(getparentprocessname2)
+  //register_PYthonGUI;
+  
+  //InverseCompareResult
+  
+     st := 'a number 12.35 and another 13.415';
+     writeln('Total String parts = '+IntToStr(NumStringParts(st,#32)));
+     f1 := StrToFloatDef(GetStringPart(st,#32,3),0.0);
+     f2 := StrToFloatDef(GetStringPart(st,#32,6),0.0);
+     writeln('Float 1 = '+FloatToStr(F1)+' and Float 2 = '+FloatToStr(F2)); 
+     
+     TestVectorClassExtended;      
+     
+   with TMatrixClass.CreateSize(10,1) do begin
+      //SolveLinearSystem()
+    free
+  end; 
+  
+  //procedure SIRegister_CurlHttpCodes(CL: TPSPascalCompiler);
+  writeln(itoa(HTTP_BAD_GATEWAY))
+  
+  with TNNet.create do begin
+      //createlayer('TNNetDropout') 
+      InitWeights(); 
+      //AddLayer47(GetRandomLayer( )) 
+      //GetRandomLayer( );
+      writeln('GetBiasSum '+floattostr(GetBiasSum( )));                  
+    free
+  end;
+ 
+ (* 
+  NN := TNNet.Create();
+  NumClasses:= 2;
+  fLearningRate:= 0.009;
+  
+  NN.AddLayer49([
+  TNNetInput.Create4(32, 32, 3), //32x32x3 Input Image
+  TNNetConvolutionReLU.Create({Features=}16, 
+                    {FeatureSize=}5, {Padding=}0, {Stride=}1, {SuppressBias=}0),
+  TNNetMaxPool.Create44({Size=}2, 0, 0),
+  TNNetConvolutionReLU.Create({Features=}32, 
+                    {FeatureSize=}5, {Padding=}0, {Stride=}1, {SuppressBias=}0),
+  TNNetMaxPool.Create44({Size=}2,0,0),
+  TNNetConvolutionReLU.Create({Features=}32, 
+                    {FeatureSize=}5, {Padding=}0, {Stride=}1, {SuppressBias=}0),
+  TNNetFullConnectReLU.Create30({Neurons=}32,0),
+  TNNetFullConnectLinear.Create28(NumClasses,0),
+  TNNetSoftMax.Create()
+                ]);
+  
+  
+   //Loading 10K images from file "data_batch_1.bin" ...
+  //ShowNeurons
+  //LoadNNLayersIntoCombo
+  //LoadTinyImageIntoTImage(var TI: TTinyImage; var Image: TImage);
+  
+  //function CheckCIFARFile():boolean;
+  //https://github.com/joaopauloschuler/neural-api/blob/master/neural/neuraldatasets.pas
+  
+  //procedure loadCifar10Dataset(ImgVolumes: TNNetVolumeList; idx:integer; base_pos:integer = 0; color_encoding: byte = csEncodeRGB); overload;
+  
+  //loadCifar10Dataset6(ImgVolumes, 1, 0, csEncodeRGB); //overload;
+  //if not (FileExists('data_batch_1.bin')) then --- files must be in root
+  //NN.DebugStructure();
+  writeln('CheckCIFARFile() '+botostr(CheckCIFARFile()));
+  //CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes); 
+  try   
+     CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, csEncodeRGB);
+  except
+     writeln(exceptiontostring(exceptiontype, exceptionparam))
+  end
+  WriteLn('Neural Network will minimize error with:');
+  WriteLn(' Layers: '+itoa( NN.CountLayers()));
+  WriteLn(' Neurons: '+itoa( NN.CountNeurons()));
+  WriteLn(' Weights: '+itoa( NN.CountWeights()));  
+  
+  NeuralFit := TNeuralImageFit.Create;
+  NeuralFit.InitialLearningRate := fLearningRate;
+  NeuralFit.FileNameBase:= 'EKONSimpleImageClassifier2'+IntToStr(GetProcessId());
+  NeuralFit.Inertia := 0.8;
+  NeuralFit.LearningRateDecay := 0.005;
+    NeuralFit.StaircaseEpochs := 17;
+   // NeuralFit.Inertia := 0.9;
+    NeuralFit.L2Decay := 0.00001;
+    neuralfit.verbose:= true;
+  try 
+  writeln(neuralfit.FileNameBase)
+  try
+  NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}64, {epochs=}2); 
+  except
+    writeln('writeln Exceptpn!!')
+   end; 
+  
+  //NeuralFit.Fit(NN, ImgTrainingVolumes,ImgValidationVolumes,ImgTestVolumes, NumClasses,           //       {batchsize}128, {epochs}100)
+  
+  finally
+    NN.Free;
+    NeuralFit.Free;   
+    ImgTestVolumes.Free;
+    ImgValidationVolumes.Free;
+    ImgTrainingVolumes.Free;
+    writeln('all frees...');
+  end;     *)
+  
+   //TTestCNNAlgoDoRun2;
+   
+    //ReluTestingRunAlgo(1);
+   
+   //ReluTestingRunAlgo2(1);
+   
+  // TTestCNNAlgoDoRunClassifier89;
+   
+   //RunSimpleAlgo;
+   //TFormVisualLearningLearn(self);
+  
+    writeln(itoa(neuralGetProcessId( )));
+    writeln(itoa(GetProcessId( )));
+   //CreatesimpleCNN ;
+  
+   { TrainingPairs := CreateHypotenusePairList(10000);
+    ValidationPairs := CreateHypotenusePairList(1000);
+    TestPairs := CreateHypotenusePairList(1000);   }
+    //procedure TestBackProp();
+    //TestBackProp();
+    
+    //TTestCNNAlgoDoRunHypo;
+    
+    TTestCNNAlgoTrainDense();
+  
+End.
+
+Ref:
+
+Starting Validation.
+VALIDATION RECORD! Saving NN at DenseNetBCL40_2.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:4;3;1;1;1;0;0;0#1)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#2)TNNetChannelMul:0;0;0;0;0;0;0;0#3)TNNetChannelBias:0;0;0;0;0;0;0;0#4)TNNetSELU:0;0;0;0;0;0;0;0#5)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#6)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#7)TNNetChannelMul:0;0;0;0;0;0;0;0#8)TNNetChannelBias:0;0;0;0;0;0;0;0#9)TNNetSELU:0;0;0;0;0;0;0;0#10)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#11)TNNetDropout:5;1;0;0;0;0;0;0#12)TNNetDeepConcat:0;0;0;0;0;0;0;0:1;12#13)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#14)TNNetChannelMul:0;0;0;0;0;0;0;0#15)TNNetChannelBias:0;0;0;0;0;0;0;0#16)TNNetSELU:0;0;0;0;0;0;0;0#17)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#18)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#19)TNNetChannelMul:0;0;0;0;0;0;0;0#20)TNNetChannelBias:0;0;0;0;0;0;0;0#21)TNNetSELU:0;0;0;0;0;0;0;0#22)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#23)TNNetDropout:5;1;0;0;0;0;0;0#24)TNNetDeepConcat:0;0;0;0;0;0;0;0:13;24#25)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#26)TNNetChannelMul:0;0;0;0;0;0;0;0#27)TNNetChannelBias:0;0;0;0;0;0;0;0#28)TNNetSELU:0;0;0;0;0;0;0;0#29)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#30)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#31)TNNetChannelMul:0;0;0;0;0;0;0;0#32)TNNetChannelBias:0;0;0;0;0;0;0;0#33)TNNetSELU:0;0;0;0;0;0;0;0#34)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#35)TNNetDropout:5;1;0;0;0;0;0;0#36)TNNetDeepConcat:0;0;0;0;0;0;0;0:25;36#37)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#38)TNNetChannelMul:0;0;0;0;0;0;0;0#39)TNNetChannelBias:0;0;0;0;0;0;0;0#40)TNNetSELU:0;0;0;0;0;0;0;0#41)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#42)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#43)TNNetChannelMul:0;0;0;0;0;0;0;0#44)TNNetChannelBias:0;0;0;0;0;0;0;0#45)TNNetSELU:0;0;0;0;0;0;0;0#46)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#47)TNNetDropout:5;1;0;0;0;0;0;0#48)TNNetDeepConcat:0;0;0;0;0;0;0;0:37;48#49)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#50)TNNetChannelMul:0;0;0;0;0;0;0;0#51)TNNetChannelBias:0;0;0;0;0;0;0;0#52)TNNetSELU:0;0;0;0;0;0;0;0#53)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#54)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#55)TNNetChannelMul:0;0;0;0;0;0;0;0#56)TNNetChannelBias:0;0;0;0;0;0;0;0#57)TNNetSELU:0;0;0;0;0;0;0;0#58)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#59)TNNetDropout:5;1;0;0;0;0;0;0#60)TNNetDeepConcat:0;0;0;0;0;0;0;0:49;60#61)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#62)TNNetChannelMul:0;0;0;0;0;0;0;0#63)TNNetChannelBias:0;0;0;0;0;0;0;0#64)TNNetSELU:0;0;0;0;0;0;0;0#65)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#66)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#67)TNNetChannelMul:0;0;0;0;0;0;0;0#68)TNNetChannelBias:0;0;0;0;0;0;0;0#69)TNNetSELU:0;0;0;0;0;0;0;0#70)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#71)TNNetDropout:5;1;0;0;0;0;0;0#72)TNNetDeepConcat:0;0;0;0;0;0;0;0:61;72#73)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#74)TNNetChannelMul:0;0;0;0;0;0;0;0#75)TNNetChannelBias:0;0;0;0;0;0;0;0#76)TNNetSELU:0;0;0;0;0;0;0;0#77)TNNetPointwiseConvLinear:38;1;0;1;1;0;0;0#78)TNNetMaxPool:2;2;0;0;0;0;0;0#79)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#80)TNNetChannelMul:0;0;0;0;0;0;0;0#81)TNNetChannelBias:0;0;0;0;0;0;0;0#82)TNNetSELU:0;0;0;0;0;0;0;0#83)TNNetMaxChannel:2;2;0;0;0;0;0;0#84)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#85)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 10 Examples seen:400000 Validation Accuracy: 0.4925 Validation Error: 1.3194 Validation Loss: 1.4684 Total time: 1082.28min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Starting Testing.
+Epochs: 10 Examples seen:400000 Test Accuracy: 0.5010 Test Error: 1.3102 Test Loss: 1.4532 Total time: 1097.69min
+Epoch time: 28.0000 minutes. 10 epochs: 4.7000 hours.
+Epochs: 10. Working time: 18.29 hours.
+CAI maXbox Neural Fit Finished.
+ mX4 executed: 26/12/2021 14:36:36  Runtime: 5:42:1.831  Memload: 34% use
+
+
+
+ref:  TRUE
+Inputs:76, 96 - Output:117.477012634277344  Desired Output:76
+Inputs:99, 72 - Output:116.991142272949219  Desired Output:99
+Inputs:85, 39 - Output:86.618339538574219  Desired Output:85
+Inputs:12, 20 - Output:26.851371765136719  Desired Output:12
+Inputs:9, 5 - Output:15.235488891601563  Desired Output:9
+Inputs:25, 0 - Output:22.43159294128418  Desired Output:25
+Inputs:21, 39 - Output:44.950344085693359  Desired Output:21
+Inputs:50, 40 - Output:64.475341796875  Desired Output:50
+Inputs:92, 23 - Output:80.868919372558594  Desired Output:92
+Inputs:70, 53 - Output:85.87091064453125  Desired Output:70
+terminated... 
+Press ENTER to exit. or just compute finished...
+ mX4 executed: 23/12/2021 20:46:31  Runtime: 0:0:29.850  Memload: 43% use
+
+Ref: simple logical learner
+300 x 0 Output:  0.30   0.07   0.26  - Training/Desired Output:  0.10   0.10   0.10 
+300 x 1 Output:  0.40   0.29   0.62  - Training/Desired Output:  0.80   0.10   0.80 
+300 x 2 Output:  0.72   0.22   0.62  - Training/Desired Output:  0.80   0.10   0.80 
+300 x 3 Output:  0.37   0.56   1.00  - Training/Desired Output:  0.10   0.80   0.80 
+
+600 x 0 Output:  0.29   0.02   0.23  - Training/Desired Output:  0.10   0.10   0.10 
+600 x 1 Output:  0.52   0.28   0.62  - Training/Desired Output:  0.80   0.10   0.80 
+600 x 2 Output:  0.74   0.15   0.69  - Training/Desired Output:  0.80   0.10   0.80 
+600 x 3 Output:  0.27   0.66   0.96  - Training/Desired Output:  0.10   0.80   0.80 
+
+900 x 0 Output:  0.22   0.02   0.20  - Training/Desired Output:  0.10   0.10   0.10 
+900 x 1 Output:  0.65   0.23   0.66  - Training/Desired Output:  0.80   0.10   0.80 
+900 x 2 Output:  0.75   0.13   0.74  - Training/Desired Output:  0.80   0.10   0.80 
+900 x 3 Output:  0.18   0.72   0.90  - Training/Desired Output:  0.10   0.80   0.80 
+
+1200 x 0 Output:  0.15   0.04   0.16  - Training/Desired Output:  0.10   0.10   0.10 
+1200 x 1 Output:  0.73   0.18   0.72  - Training/Desired Output:  0.80   0.10   0.80 
+1200 x 2 Output:  0.78   0.13   0.77  - Training/Desired Output:  0.80   0.10   0.80 
+1200 x 3 Output:  0.13   0.75   0.85  - Training/Desired Output:  0.10   0.80   0.80 
+
+1500 x 0 Output:  0.11   0.06   0.12  - Training/Desired Output:  0.10   0.10   0.10 
+1500 x 1 Output:  0.79   0.15   0.77  - Training/Desired Output:  0.80   0.10   0.80 
+1500 x 2 Output:  0.80   0.12   0.79  - Training/Desired Output:  0.80   0.10   0.80 
+1500 x 3 Output:  0.10   0.77   0.82  - Training/Desired Output:  0.10   0.80   0.80 
+
+1800 x 0 Output:  0.10   0.07   0.11  - Training/Desired Output:  0.10   0.10   0.10 
+1800 x 1 Output:  0.80   0.13   0.79  - Training/Desired Output:  0.80   0.10   0.80 
+1800 x 2 Output:  0.80   0.11   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+1800 x 3 Output:  0.10   0.78   0.81  - Training/Desired Output:  0.10   0.80   0.80 
+
+2100 x 0 Output:  0.10   0.09   0.11  - Training/Desired Output:  0.10   0.10   0.10 
+2100 x 1 Output:  0.80   0.12   0.79  - Training/Desired Output:  0.80   0.10   0.80 
+2100 x 2 Output:  0.80   0.11   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+2100 x 3 Output:  0.10   0.79   0.80  - Training/Desired Output:  0.10   0.80   0.80 
+
+2400 x 0 Output:  0.10   0.09   0.10  - Training/Desired Output:  0.10   0.10   0.10 
+2400 x 1 Output:  0.80   0.11   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+2400 x 2 Output:  0.80   0.10   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+2400 x 3 Output:  0.10   0.79   0.80  - Training/Desired Output:  0.10   0.80   0.80 
+
+2700 x 0 Output:  0.10   0.09   0.10  - Training/Desired Output:  0.10   0.10   0.10 
+2700 x 1 Output:  0.80   0.11   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+2700 x 2 Output:  0.80   0.10   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+2700 x 3 Output:  0.10   0.80   0.80  - Training/Desired Output:  0.10   0.80   0.80 
+
+3000 x 0 Output:  0.10   0.10   0.10  - Training/Desired Output:  0.10   0.10   0.10 
+3000 x 1 Output:  0.80   0.10   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+3000 x 2 Output:  0.80   0.10   0.80  - Training/Desired Output:  0.80   0.10   0.80 
+3000 x 3 Output:  0.10   0.80   0.80  - Training/Desired Output:  0.10   0.80   0.80 
+
+Layer 0 Max Error: 0 Min Error: 0 Max ErrorD: 0 Min ErrorD: 0 TNNetInput 2,1,1
+debug errors else
+Layer 1 Max Error: 0.000858666782733053 Min Error: -0.00092624151147902 Max ErrorD: 0 Min ErrorD: 0 TNNetFullConnectReLU 3,1,1
+ Parent:0
+Layer 2 Max Error: 0.0012739896774292 Min Error: -0.00215935707092285 Max ErrorD: 0 Min ErrorD: 0 TNNetFullConnectReLU 3,1,1
+ Parent:1
+Press ENTER to exit.
+
+3000 x 0 Output:  0.37   0.16   0.56  - Training/Desired Output: 0.10  0.10  0.10 
+3000 x 1 Output:  0.77   0.10   0.82  - Training/Desired Output: 0.80  0.10  0.80 
+3000 x 2 Output:  0.59   0.00   0.55  - Training/Desired Output: 0.80  0.10  0.80 
+3000 x 3 Output:  0.11   0.72   0.57  - Training/Desired Output: 0.10  0.80  0.80 
+
+Ref:
+Starting Validation.
+VALIDATION RECORD! Saving NN at autosave-neuralnetwork_a1.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionReLU:16;5;0;0;1;0;0;0#1)TNNetMaxPool:2;2;0;0;0;0;0;0#2)TNNetConvolutionReLU:128;5;0;0;1;0;0;0#3)TNNetFullConnectLinear:64;1;1;2;0;0;0;0#4)TNNetFullConnect:10;1;1;10;0;0;0;0#5)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 1 Examples seen:40000 Validation Accuracy: 0.1014 Validation Error: 1.7999 Validation Loss: 2.3027 Total time: 5.21min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 3.5000 minutes. 1 epochs: 0.0580 hours.
+Epochs: 1. Working time: 0.09 hours.
+CAI maXbox Neural Fit Finished.
+ mX4 executed: 04/11/2021 15:47:19  Runtime: 0:5:21.565  Memload: 41% use
+
+SELU Classifier
+0 -1 0
+0 -1 0
+0 -1 0
+0 -1 0
+0 -1 0
+0 -1 0
+40000 of samples have been processed.
+Starting Validation. 
+ Epochs: 5 Examples seen:200000 Validation Accuracy: 0.0980 Validation Error: 1.8000 Validation Loss: 2.3028 Total time: 14.31min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 2.0000 minutes. 5 epochs: 0.1600 hours.
+Epochs: 5. Working time: 0.24 hours.
+CAI maXbox Neural Fit Finished.
+3 Volumes + NN + NF freed...
+ mX4 executed: 04/11/2021 16:07:45  Runtime: 0:14:25.509  Memload: 43% use
+PascalScript maXbox4 - RemObjects & SynEdit
+C:\maXbox\works2021\maxbox4\examples\1065__CAI_2_SiImageClassifier21_Tutor_89_test2.txtOutput.txt  as output file stored
+
+50 epochs:
+40000 of samples have been processed.
+Starting Validation.
+Starting Testing.
+Epoch time: 2.2000 minutes. 50 epochs: 1.8000 hours.
+Epochs: 50. Working time: 2.14 hours.
+CAI maXbox Neural Fit Finished.
+3 Volumes + NN + NF freed...
+ mX4 executed: 04/11/2021 22:45:35  Runtime: 2:8:19.673  Memload: 41% use
+ 
+ 
+epoch	training accuracy	training loss	training error	validation accuracy	validation loss
+1	0.0955	2.3005	1.7996	0.0977	2.3028
+2	0.0924	2.3026	1.8	0.0977	2.3028
+3	0.0919	2.3027	1.8	0.0977	2.3028
+4	0.0981	2.3063	1.8007	0.098	2.3027
+
+47	0.0938	2.3036	1.8002	0.0977
+48	0.0997	2.3018	1.7998	0.0977
+49	0.0903	2.303	1.8001	0.0977
+50	0.0995	2.3036	1.8002	0.0977
+
+
+
+Doc: Destroying it calls Py_Finalize, which frees all memory allocated by the Python DLL.
+
+Or, if you're just using the Python API without the VCL wrappers, you can probably just call Py_NewInterpreter on your TPythonInterface object to get a fresh execution environment without necessarily discarding everything done before.
+
+Example - How to create a simple fully forward connected network 3x3
+NN := TNNet.Create();
+NN.AddLayer( TNNetInput.Create(3) );
+NN.AddLayer( TNNetLayerFullConnectReLU.Create(3) );
+NN.AddLayer( TNNetLayerFullConnectReLU.Create(3) );
+NN.SetLearningRate(0.01,0.8);
+
+Evil eval()
+
+You should never pass untrusted source to the eval() directly. As it is quite easy for the malicious user to wreak havoc on your system. For example, the following code can be used to delete all the files from the system.
+
+1 >>>
+2 eval('os.system("RM -RF /")') # command is deliberately capitalized
+3 >>>
+
+procedure TNNet.LoadDataFromString(strData: string);
+var
+  S: TStringList;
+  Cnt: integer;
+begin
+  S := CreateTokenizedStringList(strData,'!');
+
+  if S.Count = FLayers.Count then
+  begin
+    if S.Count > 0 then
+    begin
+      for Cnt := 0 to S.Count - 1 do
+      begin
+        FLayers[Cnt].LoadDataFromString(S[Cnt]);
+      end;
+    end;
+  end
+  else
+  begin
+    FErrorProc
+    (
+      'Error while loading network: number of structure layers '+
+      IntToStr(FLayers.Count)+' differ from data loaded layers '+
+      IntToStr(S.Count)
+    );
+
+
+Ref:   https://github.com/joaopauloschuler/neural-api
+
+ 
+As we grow, we occasionally need to update our terms of service. To keep using Bitbucket Cloud, review and agree to the updated terms. To learn more, please see our Summary of Changes.
+
+
+              _od#HMM6&*MMMH::-_
+          _dHMMMR??MMM? ""| `"'-?Hb_
+       .~HMMMMMMMMHMMM#M?        `*HMb.
+     ./?HMMMMMMMMMMM"*"""           &MHb.
+    /'|MMMMMMMMMMM'             -   `*MHM\
+   /  |MMMMMMHHM''                   .MMMHb
+  |   9HMMP   .Hq,                   TMMMMMH
+ /     |MM\,H-""&&6\__               `MMMMMMb
+|       `""HH#,       \             - MMMMMMM|
+|           `HoodHMM###.              `9MMMMMH
+|              .MMMMMMMM##\             `*"?HM
+|         ..  ,HMMMMMMMMMMMo\.              |M
+|             |MMMMMMMMMMMMMMMMHo           |M
+|              ?MMMMMMMMMMMMMMMM*           |H
+|.              `#MMMMMMMMMMMMM'           .M|
+ \                `MMMMMMMMMMM*            |P
+ `\                MMMMMMMMT"'            ,H
+  `\              `MMMMMMH?              ./
+    \.            |MMMH#"               ,/
+     `\.          |MMP'               ./'
+       `~\        `HM:.-    .       ,/'
+          "-\_       '_\ .      _.-"
+              "-\-#odMM\_,oo==-"
+    
+
+normal
+             uninvolving = True              neg : pos    =     11.7 : 1.0
+                  avoids = True              pos : neg    =     11.7 : 1.0
+             fascination = True              pos : neg    =     10.3 : 1.0
+              astounding = True              pos : neg    =     10.3 : 1.0
+                 idiotic = True              neg : pos    =      9.8 : 1.0
+    |   n   p |                   |   n   p |    Stemmer more false positive
+    |   e   o |                   |   e   o | 
+    |   g   s |                   |   g   s | 
+----+---------+               ----+---------+ 
+neg |<119>131 |               neg |<110>140 | 
+pos |   5<245>|               pos |   5<245>| 
+----+---------+               ----+---------+ 
+(row = reference; col = test)
+
+unit uPSI_neuraldatasets;
+{
+mindset let mindset set
+
+}
+interface
+ 
+
+ 
+uses
+   SysUtils
+  ,Classes
+  ,uPSComponent
+  ,uPSRuntime
+  ,uPSCompiler
+  ;
+ 
+type 
+(*----------------------------------------------------------------------------*)
+  TPSImport_neuraldatasets = class(TPSPlugin)
+  public
+    procedure CompileImport1(CompExec: TPSScript); override;
+    procedure ExecImport1(CompExec: TPSScript; const ri: TPSRuntimeClassImporter); override;
+  end;
+ 
+ 
+{ compile-time registration functions }
+procedure SIRegister_TClassesAndElements(CL: TPSPascalCompiler);
+procedure SIRegister_TFileNameList(CL: TPSPascalCompiler);
+procedure SIRegister_neuraldatasets(CL: TPSPascalCompiler);
+
+{ run-time registration functions }
+procedure RIRegister_neuraldatasets_Routines(S: TPSExec);
+procedure RIRegister_TClassesAndElements(CL: TPSRuntimeClassImporter);
+procedure RIRegister_TFileNameList(CL: TPSRuntimeClassImporter);
+procedure RIRegister_neuraldatasets(CL: TPSRuntimeClassImporter);
+
+procedure Register;
+
+implementation
+
+
+uses
+   neuraldatasets, neuralnetworkCAI, neuralvolume , neuralthread ,math
+  ;
+ 
+ 
+procedure Register;
+begin
+  RegisterComponents('Pascal Script', [TPSImport_neuraldatasets]);
+end;
+
+(* === compile-time registration functions === *)
+(*----------------------------------------------------------------------------*)
+procedure SIRegister_TClassesAndElements(CL: TPSPascalCompiler);
+begin
+  //with RegClassS(CL,'TStringStringListVolume', 'TClassesAndElements') do
+  with CL.AddClassN(CL.FindClass('TStringStringListVolume'),'TClassesAndElements') do
+  begin
+    RegisterMethod('Constructor Create( )');
+    Function CountElements( ) : integer');
+    Procedure LoadFoldersAsClasses( FolderName : string; pImageSubFolder : string; SkipFirst : integer; SkipLast : integer)');
+    Procedure LoadFoldersAsClassesProportional( FolderName : string; pImageSubFolder : string; fSkipFirst : TNeuralFloat; fLoadLen : TNeuralFloat)');
+    Procedure LoadImages0( color_encoding : integer; NewSizeX : integer; NewSizeY : integer);');
+    Procedure LoadClass_FilenameFromFolder( FolderName : string)');
+    Function GetRandomClassId( ) : integer');
+    Function GetClassesCount( ) : integer');
+    Procedure GetRandomFileId( out ClassId : integer; out FileId : integer; StartPos : TNeuralFloat; Range : TNeuralFloat)');
+    Procedure GetRandomFileName( out ClassId : integer; out FileName : string; StartPos : TNeuralFloat; Range : TNeuralFloat)');
+    Procedure GetRandomImgVolumes( vInput, vOutput : TNNetVolume; StartPos : TNeuralFloat; Range : TNeuralFloat)');
+    Function GetFileName( ClassId, ElementId : integer) : string');
+    Procedure AddVolumesTo( Volumes : TNNetVolumeList; EmptySource : boolean)');
+    Procedure AddFileNamesTo( FileNames : TFileNameList)');
+    Procedure MakeMonopolar( Divisor : TNeuralFloat)');
+    Function FileCountAtClassId( ClassId : integer) : integer');
+    Procedure LoadImages_NTL( index, threadnum : integer)');
+  end;
+end;
+
+(*----------------------------------------------------------------------------*)
+procedure SIRegister_TFileNameList(CL: TPSPascalCompiler);
+begin
+  //with RegClassS(CL,'TStringListInt', 'TFileNameList') do
+  with CL.AddClassN(CL.FindClass('TStringListInt'),'TFileNameList') do
+  begin
+    Constructor Create( )');
+    Procedure GetImageVolumePairFromId( ImageId : integer; vInput, vOutput : TNNetVolume; ThreadDangerous : boolean)');
+    Procedure GetRandomImagePair( vInput, vOutput : TNNetVolume)');
+    Function ThreadSafeLoadImageFromFileIntoVolume( ImageFileName : string; V : TNNetVolume) : boolean');
+    RegisterProperty('ClassCount', 'integer', iptrw);
+  end;
+end;
+
+(*----------------------------------------------------------------------------*)
+procedure SIRegister_neuraldatasets(CL: TPSPascalCompiler);
+begin
+  CL.AddTypeS('TTinyImageChannel','array [0..31] of array[0..31] of byte; ');
+  CL.AddTypeS('TTinyImageChannel1D','array [0..32 * 32 - 1] of byte; ');
+  CL.AddTypeS('TMNistImage','array [0..27] of array[0..27] of byte; ');
+
+  //TTinyImageChannel1D = packed array [0..32 * 32 - 1] of byte;
+  //TMNistImage = packed array [0..27, 0..27] of byte;
+
+  CL.AddTypeS('TTinyImage', 'record bLabel : byte; R : TTinyImageChannel; G : T'
+   +'TinyImageChannel; B : TTinyImageChannel; end');
+  CL.AddTypeS('TCifar100Image', 'record bCoarseLabel : byte; bFineLabel : byte;'
+   +' R : TTinyImageChannel; G : TTinyImageChannel; B : TTinyImageChannel; end');
+  CL.AddTypeS('TTinySingleChannelImage', 'record bLabel : byte; Grey : TTinyImageChannel; end');
+  CL.AddTypeS('TTinySingleChannelImage1D', 'record bLabel : byte; Grey : TTinyImageChannel1D; end');
+  //CL.AddTypeS('TTinySingleChannelImagePtr','^TTinySingleChannelImage// will not work');
+  //CL.AddTypeS('TTinySingleChannelImage1DPtr', '^TTinySingleChannelImage1D // will not work');
+  SIRegister_TFileNameList(CL);
+  SIRegister_TClassesAndElements(CL);
+ CL.AddDelphiFunction('Procedure CreateVolumesFromImagesFromFolder(out ImgTrainingVolumes,ImgValidationVolumes,ImgTestVolumes:TNNetVolumeList;FolderName,pImageSubFolder:string;color_encoding:integer;TrainingProp,ValidationProp,TestProp:single;'+
+                                                 'NewSizeX:integer;NewSizeY:integer)');
+ CL.AddDelphiFunction('Procedure CreateFileNameListsFromImagesFromFolder( out TrainingFileNames, ValidationFileNames, TestFileNames : TFileNameList; FolderName, pImageSubFolder : string; TrainingProp, ValidationProp, TestProp : single)');
+ //Procedure LoadImageIntoVolume( M : TFPMemoryImage; Vol : TNNetVolume)');
+ //Procedure LoadVolumeIntoImage( Vol : TNNetVolume; M : TFPMemoryImage)');
+ Function LoadImageFromFileIntoVolume(ImageFileName:string; V:TNNetVolume): boolean');
+ Function SaveImageFromVolumeIntoFile(V:TNNetVolume;ImageFileName:string) : boolean');
+ Procedure ConfusionWriteCSVHeader(var CSVConfusion:TextFile;Labels array of string)');
+ Procedure ConfusionWriteCSV( var CSVConfusion: TextFile; Vol:TNNetVolume; Digits : integer)');
+ Procedure LoadTinyImageIntoNNetVolume1( var TI : TTinyImage; Vol : TNNetVolume);');
+ Procedure LoadTinyImageIntoNNetVolume2(var TI: TCifar100Image; Vol : TNNetVolume);');
+ Procedure LoadTinyImageIntoNNetVolume3( var TI : TMNistImage; Vol : TNNetVolume);');
+ Procedure LoadNNetVolumeIntoTinyImage4( Vol : TNNetVolume; var TI : TTinyImage);');
+ Procedure LoadNNetVolumeIntoTinyImage5( Vol:TNNetVolume; var TI : TCifar100Image);');
+ Procedure LoadTinySingleChannelIntoNNetVolume( var SC : TTinySingleChannelImage; Vol : TNNetVolume)');
+ Procedure TinyImageCreateGrey(var TI:TTinyImage;var TIGrey:TTinySingleChannelImage)');
+ Procedure TinyImageHE( var TI, TIHE : TTinySingleChannelImage)');
+ Procedure TinyImageVE( var TI, TIVE : TTinySingleChannelImage)');
+ Procedure TinyImageRemoveZeroGradient(var TI:TTinySingleChannelImage;distance:byte)');
+ Procedure TinyImageHVE( var TI, TIHE : TTinySingleChannelImage)');
+ Function TinyImageTo1D( var TI:TTinySingleChannelImage): TTinySingleChannelImage1D');
+ Procedure CreateCifar10Volumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; color_encoding : byte)');
+ Procedure CreateCifar100Volumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; color_encoding : byte; Verbose : boolean)');
+ Procedure CreateMNISTVolumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; TrainFileName, TestFileName : string; Verbose : boolean; IsFashion : boolean)');
+ Procedure loadCifar10Dataset6( ImgVolumes : TNNetVolumeList; idx : integer; base_pos : integer; color_encoding : byte);');
+ Procedure loadCifar10Dataset7( ImgVolumes : TNNetVolumeList; fileName : string; base_pos : integer; color_encoding : byte);');
+ Procedure loadCifar100Dataset( ImgVolumes : TNNetVolumeList; fileName : string; color_encoding : byte; Verbose : boolean)');
+ Procedure loadMNISTDataset( ImgVolumes : TNNetVolumeList; fileName : string; Verbose : boolean; IsFashion : boolean; MaxLabel : integer);');
+ Function CheckCIFARFile( ) : boolean');
+ Function CheckCIFAR100File( ) : boolean');
+ Function CheckMNISTFile( fileName : string; IsFasion : boolean) : boolean');
+ Procedure TestBatch( NN : TNNet; ImgVolumes : TNNetVolumeList; SampleSize : integer; out Rate, Loss, ErrorSum : TNeuralFloat)');
+ Procedure TranslateCifar10VolumesToMachineAnimal( VolumeList : TNNetVolumeList)');
+ Function SwapEndian( I : integer) : integer');
+end;
+
+
