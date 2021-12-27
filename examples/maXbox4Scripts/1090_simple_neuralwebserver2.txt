@@ -1,0 +1,537 @@
+//program CAI_NEURAL_Crypto_RSA;  
+//https://delphidigital.io/   
+//https://phi.exchange/ 
+//https://www.youtube.com/watch?v=dqIKxAeVZyo      
+
+unit usimple_Neuralwebserver2;
+
+//https://sourceforge.net/p/cai/svncode/HEAD/tree/trunk/lazarus/experiments/NeuralWebServer/usimpleneuralwebserver.pas
+
+//{$mode objfpc}{$H+}
+
+interface
+
+{uses
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
+  Buttons, blcksock, sockets, Synautil, neuralnetwork, neuralvolume;  }
+
+type
+
+  { TFormNeuralWebServer }
+
+  TFormNeuralWebServer = {class(} TForm;
+  var
+    BitClose: TBitBtn;
+    BitStop: TBitBtn;
+    BitBtnStart: TBitBtn;
+    ButLoad: TButton;
+    CheckLogs: TCheckBox;
+    EdBind: TEdit;
+    EdPort: TEdit;
+    Label1: TLabel;
+    LabBind: TLabel;
+    OpenDialogNN: TOpenDialog;
+       procedure BitBtnStartClick(Sender: TObject);
+       procedure BitCloseClick(Sender: TObject);
+       procedure BitStopClick(Sender: TObject);
+       procedure ButLoadClick(Sender: TObject);
+       procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
+       procedure FormCreate(Sender: TObject);
+  //private
+    { private declarations }
+   var 
+    FListenerSocket, FConnectionSocket: TTCPBlockSocket;
+    FWantQuit: boolean;
+    FCanClose: boolean;
+    FNN: TNNet;
+    FInputV, FOutputV: TNNetVolume;
+
+    procedure OutputData(ASocket: TTCPBlockSocket; var OutputDataString: string);
+    procedure AttendConnection(ASocket: TTCPBlockSocket);
+  //public
+    { public declarations }
+  //end;
+
+var
+  FormNeuralWebServer: TFormNeuralWebServer;
+
+implementation
+
+//{$R *.lfm}
+
+{ TFormNeuralWebServer }
+
+procedure FormCreate(Sender: TObject);
+begin
+  FListenerSocket:= TTCPBlockSocket.Create;
+  FConnectionSocket:= TTCPBlockSocket.Create;
+  FListenerSocket.CreateSocket;
+  FListenerSocket.setLinger(true,10);
+  FNN:= TNNet.Create;
+  FInputV:= TNNetVolume.Create;
+  FOutputV:= TNNetVolume.Create;
+
+  FWantQuit:= false;
+  FCanClose:= true;
+  writeln('form create debug..');
+end;
+
+procedure OutputData(ASocket: TTCPBlockSocket;
+  var OutputDataString: string);
+begin
+  // Write the headers back to the client
+  ASocket.SendString('HTTP/1.0 200' + CRLF);
+  ASocket.SendString('Content-type: Text/Html' + CRLF);
+  ASocket.SendString('Content-length: ' + IntTostr(Length(OutputDataString)) + CRLF);
+  ASocket.SendString('Connection: close' + CRLF);
+  ASocket.SendString('Date: ' + Rfc822DateTime(now) + CRLF);
+  ASocket.SendString('Server: Servidor inspirado no servidor do Felipe usando Synapse' + CRLF);
+  ASocket.SendString('' + CRLF);
+
+  // Write the document back to the browser
+  ASocket.SendString(OutputDataString);
+end;
+
+procedure AttendConnection(ASocket: TTCPBlockSocket);
+var
+  timeout: integer;
+  s, method, uri, protocol, OutputDataString: string;
+  uriS: TStringList;
+  uriCnt: integer;
+  pcmd, pdata: string;
+begin
+  timeout:= 120000;
+
+  //read request line
+  s:= ASocket.RecvString(timeout);
+  if CheckLogs.Checked then WriteLn(s);
+  method:= cfetch(s, ' ');
+  uri:= cfetch(s, ' ');
+  protocol:= cfetch(s, ' ');
+
+  //read request headers
+  repeat
+    s:= ASocket.RecvString(Timeout);
+    if CheckLogs.Checked then WriteLn(s);
+  until s = '';
+
+  if CheckLogs.Checked then WriteLn('uri:'+uri);
+
+  uriS:= CreateTokenizedStringList(uri, '/');
+
+  // Now write the document to the output stream
+  if uriS.Count > 2 then begin
+    if CheckLogs.Checked then begin
+      for uriCnt:= 0 to uriS.Count - 1 do begin
+        WriteLn(itoa(uriCnt)+':'+uriS[uriCnt]);
+      end;
+    end;
+
+    pcmd:= uriS[1];
+    pdata:= uriS[2];
+
+    if pcmd = 'compute' then begin
+      FInputV.LoadFromString(pdata);
+      FNN.Compute65(FInputV,0);
+      FNN.GetOutput(FOutputV);
+      OutputDataString := FOutputV.SaveToString();
+    end
+    else if pcmd = 'backprop' then begin
+      FInputV.LoadFromString(pdata);
+      FNN.Backpropagate69(FInputV);
+      OutputDataString := '1';
+    end 
+    else if pcmd = 'list' then begin
+       OutputDataString := '<br/><br/>'+
+                      list_modules(exepath+'maxbox4.exe')+'<br/><br/>';
+       writeln(list_modules(exepath+'maxbox4.exe'));
+    end else begin
+      OutputDataString := 'no recognized command:' + pcmd;
+    end;
+
+    if CheckLogs.Checked then WriteLn(OutputDataString);
+    // Write the output document to the stream
+    // OutputDataString += CRLF;
+    OutputData(ASocket, OutputDataString);
+  end
+  else if uri='/' then begin
+    OutputDataString :=
+      '<br/><h2> Neural Network Server is <b>alive</b>. </h2><br/>'+
+      'compute/volume_data runs neural network. <br/>'+
+      'backprop/volume_data runs backpropagation. <br/><br/>'+
+      'Encode your input data with TVolume.SaveToString. <br/> Example '+
+      ' http://127.0.0.1:64001/compute/1;2;1;1;0.3;0.4 <br/><br/>'+
+      'Decode output data with TVolume.LoadFromString. <br/> Example '+
+      ' http://127.0.0.1:64001/backprop/1;2;1;1;0.8;0.2 <br/><br/>'+
+      'DATETIME_: '+DateTimeToInternetStr(getnowUT, true)+ '<br/>';
+    OutputData(ASocket, OutputDataString);
+  end
+  else begin
+    ASocket.SendString('HTTP/1.0 404' + CRLF);
+  end;
+
+  uriS.Free;
+  if CheckLogs.Checked then WriteLn('Finished.');
+end;
+
+procedure FormClose(Sender: TObject;
+                       var CloseAction: TCloseAction);
+begin
+  FWantQuit:= true;
+  while not(FCanClose) do Application.ProcessMessages();
+  FListenerSocket.Free;
+  FConnectionSocket.Free;
+  FInputV.Free;
+  FOutputV.Free;
+  FNN.Free;
+  writeln('Debug closed and freed..');
+end;
+
+procedure BitBtnStartClick(Sender: TObject);
+begin
+  FCanClose:= false;
+  FWantQuit:= false;
+  BitBtnStart.Enabled:= false;
+  BitStop.Enabled:= true;
+  BitClose.Enabled:= false;
+
+  FListenerSocket.bind(EdBind.Text,EdPort.Text);
+  FListenerSocket.listen;
+
+  while not(FWantQuit) do begin
+    Application.ProcessMessages();
+    if FListenerSocket.canread(100) then begin
+      FConnectionSocket.Socket:= FListenerSocket.accept;
+      WriteLn('Attending Connection. Error code (0=Success): '+
+                                        itoa(FConnectionSocket.lasterror));
+      AttendConnection(FConnectionSocket);
+      FConnectionSocket.CloseSocket;
+    end;
+  end;
+  FCanClose:= true;
+  BitBtnStart.Enabled:= true;
+  BitStop.Enabled:= false;
+  BitClose.Enabled:= true;
+end;
+
+procedure BitCloseClick(Sender: TObject);          
+begin
+  FormNeuralWebServer.Close;
+  writeln('Close clicked...in the close.');
+end;
+
+procedure BitStopClick(Sender: TObject);
+begin
+  FWantQuit:= true;
+  BitStop.Enabled:= false;
+  BitClose.Enabled:= true;
+end;
+
+procedure ButLoadClick(Sender: TObject);
+begin
+  if OpenDialogNN.Execute then begin
+    FNN.LoadFromFile(OpenDialogNN.FileName);
+    BitBtnStart.Enabled := true;
+  end;
+end;
+
+procedure loadWebFormServer;
+begin
+FormNeuralWebServer:= TFormNeuralWebServer.create(self)
+with FormNeuralWebServer do begin
+  Setbounds(456,136, 362, 252) 
+  BorderStyle:= bsDialog
+  Caption:= 'Simple Neural Web Server Example mX4'
+  ClientHeight:= 252
+  ClientWidth:= 362
+  //DesignTimePPI := 120
+  formstyle:= fsstayontop;
+  OnClose:= @FormClose ;
+  OnCreate:= @FormCreate;
+  Position:= poScreenCenter
+  //LCLVersion := '2.0.2.0'
+  icon.loadfromresourcename(hinstance, 'XNETWORK');
+  Show;
+  FormCreate(self);
+  Label1:= TLabel.create(FormNeuralWebServer)
+  with label1 do begin
+    parent:= FormNeuralWebServer;
+    Left:= 30; Height:= 20
+    Top:= 20;  Width := 29
+    Caption:= 'Port:'
+    ParentColor:= False
+    ParentFont:= False
+    //font.style:= [fsbold];
+    font.size:= 10;
+  end ;
+  EdPort:= TEdit.create(FormNeuralWebServer)
+  with edport do begin
+   parent:= FormNeuralWebServer;
+    Left:= 90; Height:= 28
+    Top:= 20;  Width := 141
+    ParentFont := False
+    font.size:= 11;
+    TabOrder := 0
+    Text := '80'
+  end ;
+ LabBind:= TLabel.create(FormNeuralWebServer)
+ with labbind do begin
+  parent:= FormNeuralWebServer;
+    Left:= 30; Height:= 20
+    Top:= 70;  Width := 33
+    Caption := 'Bind:'
+    //font.style:= [fsbold];
+    ParentColor:= False
+    ParentFont:= False
+    font.size:= 10;
+  end;
+  Edbind:= TEdit.create(FormNeuralWebServer)
+  with edbind do begin
+   parent:= FormNeuralWebServer;
+    Left := 90; Height := 28
+    Top := 70;  Width := 141
+    ParentFont := False
+    font.size:= 11;
+    TabOrder := 1
+    Text := '127.0.0.1'
+  end ;
+  BitBtnStart:= TBitBtn.create(FormNeuralWebServer)
+  with bitbtnstart do begin
+   parent:= FormNeuralWebServer;
+    Left:= 30; Height:= 38
+    Top:= 200; Width := 94
+    Caption:= 'Start'
+    OnClick:= @BitBtnStartClick
+    ParentFont := False
+    TabOrder := 2
+    glyph.loadfromresourcename(hinstance, 'TZCONNECTION');
+  end;
+  BitStop:= TBitBtn.create(FormNeuralWebServer)
+  with bitstop do begin
+   parent:= FormNeuralWebServer;
+    Left:= 138; Height:= 38
+    Top := 200;  Width:= 94
+    Caption:= '&Stop'
+    Enabled:= False
+    OnClick:= @BitStopClick
+    glyph.loadfromresourcename(hinstance,'TZCONNECTIONGROUP');
+    ParentFont:= False
+    TabOrder:= 3
+  end ;
+  Bitclose:= TBitBtn.create(FormNeuralWebServer)
+  with bitclose do begin
+   parent:= FormNeuralWebServer;
+    Left:= 250; Height:= 38
+    Top:= 200;  Width := 94
+    Caption:= '&Close'
+    OnClick:= @BitCloseClick
+    ParentFont:= False
+    TabOrder:= 4
+    glyph.loadfromresourcename(hinstance,'TZSEQUENCE');
+  end ;
+  ButLoad:= TButton.create(FormNeuralWebServer)
+  with butload do begin
+   parent:= FormNeuralWebServer;
+    Left:= 30; Height:= 32
+    Top:= 155; Width := 202
+    Caption:= 'Load Neural Network'
+    OnClick:= @ButLoadClick
+    ParentFont:= False
+    TabOrder:= 5
+  end;
+  CheckLogs:= TCheckBox.create(FormNeuralWebServer)
+  with checklogs do begin
+   parent:= FormNeuralWebServer;
+    Left:= 30; Height:= 24
+    Top:= 120; Width := 108
+    Caption:= 'Display Logs'
+    Checked:= True
+    ParentFont:= False
+    State:= cbChecked
+    TabOrder:= 6
+  end;
+  OpenDialogNN:= TOpenDialog.create(FormNeuralWebServer);
+  with opendialognn do begin
+   parent:= FormNeuralWebServer;
+    DefaultExt:= '.nn'
+    Filter:= 'Neural Network|*.nn|All Files|*.*'
+    left:= 280
+    top:= 30
+  end;
+ end;
+end; 
+
+begin //@main
+
+  loadWebFormServer;
+  
+End.
+
+(*Doc: What do mathematicians think of Von Neumann?
+
+Jacob Bronowski once told an anecdote about von Neumann.
+
+They had disagreed about some problem and Bronowski realised overnight that von Neumann was right. In the morning, Bronowski telephoned von Neumann to tell him this. Von Neumann apparently replied "You woke me up to tell me that I was right? Please wait until I am wrong."
+Bertrand Russell said that von Neumann would often have the solution to a problem before Russell had even understood the question. (Edit: Russell may not have been referring to von Neumann. Did they know each other?)
+
+
+Ref:  Starting Validation.
+VALIDATION RECORD! Saving NN at DenseNetBCL40_2.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:4;3;1;1;1;0;0;0#1)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#2)TNNetChannelMul:0;0;0;0;0;0;0;0#3)TNNetChannelBias:0;0;0;0;0;0;0;0#4)TNNetSELU:0;0;0;0;0;0;0;0#5)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#6)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#7)TNNetChannelMul:0;0;0;0;0;0;0;0#8)TNNetChannelBias:0;0;0;0;0;0;0;0#9)TNNetSELU:0;0;0;0;0;0;0;0#10)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#11)TNNetDropout:5;1;0;0;0;0;0;0#12)TNNetDeepConcat:0;0;0;0;0;0;0;0:1;12#13)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#14)TNNetChannelMul:0;0;0;0;0;0;0;0#15)TNNetChannelBias:0;0;0;0;0;0;0;0#16)TNNetSELU:0;0;0;0;0;0;0;0#17)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#18)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#19)TNNetChannelMul:0;0;0;0;0;0;0;0#20)TNNetChannelBias:0;0;0;0;0;0;0;0#21)TNNetSELU:0;0;0;0;0;0;0;0#22)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#23)TNNetDropout:5;1;0;0;0;0;0;0#24)TNNetDeepConcat:0;0;0;0;0;0;0;0:13;24#25)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#26)TNNetChannelMul:0;0;0;0;0;0;0;0#27)TNNetChannelBias:0;0;0;0;0;0;0;0#28)TNNetSELU:0;0;0;0;0;0;0;0#29)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#30)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#31)TNNetChannelMul:0;0;0;0;0;0;0;0#32)TNNetChannelBias:0;0;0;0;0;0;0;0#33)TNNetSELU:0;0;0;0;0;0;0;0#34)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#35)TNNetDropout:5;1;0;0;0;0;0;0#36)TNNetDeepConcat:0;0;0;0;0;0;0;0:25;36#37)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#38)TNNetChannelMul:0;0;0;0;0;0;0;0#39)TNNetChannelBias:0;0;0;0;0;0;0;0#40)TNNetSELU:0;0;0;0;0;0;0;0#41)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#42)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#43)TNNetChannelMul:0;0;0;0;0;0;0;0#44)TNNetChannelBias:0;0;0;0;0;0;0;0#45)TNNetSELU:0;0;0;0;0;0;0;0#46)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#47)TNNetDropout:5;1;0;0;0;0;0;0#48)TNNetDeepConcat:0;0;0;0;0;0;0;0:37;48#49)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#50)TNNetChannelMul:0;0;0;0;0;0;0;0#51)TNNetChannelBias:0;0;0;0;0;0;0;0#52)TNNetSELU:0;0;0;0;0;0;0;0#53)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#54)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#55)TNNetChannelMul:0;0;0;0;0;0;0;0#56)TNNetChannelBias:0;0;0;0;0;0;0;0#57)TNNetSELU:0;0;0;0;0;0;0;0#58)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#59)TNNetDropout:5;1;0;0;0;0;0;0#60)TNNetDeepConcat:0;0;0;0;0;0;0;0:49;60#61)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#62)TNNetChannelMul:0;0;0;0;0;0;0;0#63)TNNetChannelBias:0;0;0;0;0;0;0;0#64)TNNetSELU:0;0;0;0;0;0;0;0#65)TNNetPointwiseConvLinear:4;1;0;1;0;0;0;0#66)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#67)TNNetChannelMul:0;0;0;0;0;0;0;0#68)TNNetChannelBias:0;0;0;0;0;0;0;0#69)TNNetSELU:0;0;0;0;0;0;0;0#70)TNNetConvolutionLinear:12;3;1;1;0;0;0;0#71)TNNetDropout:5;1;0;0;0;0;0;0#72)TNNetDeepConcat:0;0;0;0;0;0;0;0:61;72#73)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#74)TNNetChannelMul:0;0;0;0;0;0;0;0#75)TNNetChannelBias:0;0;0;0;0;0;0;0#76)TNNetSELU:0;0;0;0;0;0;0;0#77)TNNetPointwiseConvLinear:38;1;0;1;1;0;0;0#78)TNNetMaxPool:2;2;0;0;0;0;0;0#79)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#80)TNNetChannelMul:0;0;0;0;0;0;0;0#81)TNNetChannelBias:0;0;0;0;0;0;0;0#82)TNNetSELU:0;0;0;0;0;0;0;0#83)TNNetMaxChannel:2;2;0;0;0;0;0;0#84)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#85)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 10 Examples seen:400000 Validation Accuracy: 0.4925 Validation Error: 1.3194 Validation Loss: 1.4684 Total time: 1082.28min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Starting Testing.
+Epochs: 10 Examples seen:400000 Test Accuracy: 0.5010 Test Error: 1.3102 Test Loss: 1.4532 Total time: 1097.69min
+Epoch time: 28.0000 minutes. 10 epochs: 4.7000 hours.
+Epochs: 10. Working time: 18.29 hours.
+CAI maXbox Neural Fit Finished.
+ mX4 executed: 26/12/2021 14:36:36  Runtime: 5:42:1.831  Memload: 34% use
+
+Liebe Kundinnen und Kunden,
+ 
+dieses Jahr neigt sich dem Ende zu und ich finde dieses zweite Corona-Jahr war alles in allem anstrengend.
+Es gibt und gab so viele Diskussionen um streitbare Themen. Schon mit der Ansprache fängt es an: Schreibt man mit Sternchen, Bindestrichen oder Binnengroßbuchstaben oder eben nicht.
+Dann das Thema mit den Geimpften und Ungeimpften – beide Gruppen sehen durch den jeweils anderen die „eigene persönliche Freiheit“ in Gefahr. Autsch.
+Selbst mit dem, was ich einkaufe, setze ich ungewollte Statements, indem ich Plastik vermeide oder nicht,  Fleisch esse oder komplett auf alle tierischen Erzeugnisse verzichte, ob ich ein Auto fahre und wenn dann welches, mit oder ohne Strom. Es gibt so viele Gründe, sich „Anders“ zu fühlen und gerade in dem letzten Jahr hatte ich den Eindruck, dass die Debatten um das jeweils „andere“ sehr viel hitziger geführt wurden, als in den Vorjahren. 
+
+
+              _od#HMM6&*MMMH::-_
+          _dHMMMR??MMM? ""| `"'-?Hb_
+       .~HMMMMMMMMHMMM#M?        `*HMb.
+     ./?HMMMMMMMMMMM"*"""           &MHb.
+    /'|MMMMMMMMMMM'             -   `*MHM\
+   /  |MMMMMMHHM''                   .MMMHb
+  |   9HMMP   .Hq,                   TMMMMMH
+ /     |MM\,H-""&&6\__               `MMMMMMb
+|       `""HH#,       \             - MMMMMMM|
+|           `HoodHMM###.              `9MMMMMH
+|              .MMMMMMMM##\             `*"?HM
+|         ..  ,HMMMMMMMMMMMo\.              |M
+|             |MMMMMMMMMMMMMMMMHo           |M
+|              ?MMMMMMMMMMMMMMMM*           |H
+|.              `#MMMMMMMMMMMMM'           .M|
+ \                `MMMMMMMMMMM*            |P
+ `\                MMMMMMMMT"'            ,H
+  `\              `MMMMMMH?              ./
+    \.            |MMMH#"               ,/
+     `\.          |MMP'               ./'
+       `~\        `HM:.-    .       ,/'
+          "-\_       '_\ .      _.-"
+              "-\-#odMM\_,oo==-"
+    
+
+normal
+             uninvolving = True              neg : pos    =     11.7 : 1.0
+                  avoids = True              pos : neg    =     11.7 : 1.0
+             fascination = True              pos : neg    =     10.3 : 1.0
+              astounding = True              pos : neg    =     10.3 : 1.0
+                 idiotic = True              neg : pos    =      9.8 : 1.0
+    |   n   p |                   |   n   p |    Stemmer more false positive
+    |   e   o |                   |   e   o | 
+    |   g   s |                   |   g   s | 
+----+---------+               ----+---------+ 
+neg |<119>131 |               neg |<110>140 | 
+pos |   5<245>|               pos |   5<245>| 
+----+---------+               ----+---------+ 
+(row = reference; col = test)
+
+unit uPSI_neuraldatasets;
+{
+mindset let mindset set
+
+}
+interface
+ 
+uses
+   SysUtils
+  ,Classes
+  ,uPSComponent
+  ,uPSRuntime
+  ,uPSCompiler
+  ;
+ 
+type 
+*)
+
+(*----------------------------------------------------------------------------*)
+ (* TPSImport_neuraldatasets = class(TPSPlugin)
+  public
+    procedure CompileImport1(CompExec: TPSScript); override;
+    procedure ExecImport1(CompExec: TPSScript; const ri: TPSRuntimeClassImporter); override;
+  end;
+ 
+{ compile-time registration functions }
+procedure SIRegister_TClassesAndElements(CL: TPSPascalCompiler);
+procedure SIRegister_TFileNameList(CL: TPSPascalCompiler);
+procedure SIRegister_neuraldatasets(CL: TPSPascalCompiler);
+
+{ run-time registration functions }
+procedure RIRegister_neuraldatasets_Routines(S: TPSExec);
+procedure RIRegister_TClassesAndElements(CL: TPSRuntimeClassImporter);
+procedure RIRegister_TFileNameList(CL: TPSRuntimeClassImporter);
+procedure RIRegister_neuraldatasets(CL: TPSRuntimeClassImporter);
+
+procedure Register;
+
+implementation
+
+uses
+   neuraldatasets, neuralnetworkCAI, neuralvolume , neuralthread ,math  ;    *)
+ 
+(*----------------------------------------------------------------------------*)
+(*procedure SIRegister_neuraldatasets(CL: TPSPascalCompiler);
+begin
+  CL.AddTypeS('TTinyImageChannel','array [0..31] of array[0..31] of byte; ');
+  CL.AddTypeS('TTinyImageChannel1D','array [0..32 * 32 - 1] of byte; ');
+  CL.AddTypeS('TMNistImage','array [0..27] of array[0..27] of byte; ');
+
+  //TTinyImageChannel1D = packed array [0..32 * 32 - 1] of byte;
+  //TMNistImage = packed array [0..27, 0..27] of byte;
+
+  CL.AddTypeS('TTinyImage', 'record bLabel : byte; R : TTinyImageChannel; G : T'
+   +'TinyImageChannel; B : TTinyImageChannel; end');
+  CL.AddTypeS('TCifar100Image', 'record bCoarseLabel : byte; bFineLabel : byte;'
+   +' R : TTinyImageChannel; G : TTinyImageChannel; B : TTinyImageChannel; end');
+  CL.AddTypeS('TTinySingleChannelImage', 'record bLabel : byte; Grey : TTinyImageChannel; end');
+  CL.AddTypeS('TTinySingleChannelImage1D', 'record bLabel : byte; Grey : TTinyImageChannel1D; end');
+//CL.AddTypeS('TTinySingleChannelImagePtr','^TTinySingleChannelImage//will not work');
+//CL.AddTypeS('TTinySingleChannelImage1DPtr','^TTinySingleChannelImage1D//not work');
+  SIRegister_TFileNameList(CL);
+  SIRegister_TClassesAndElements(CL);
+ CL.AddDelphiFunction('Procedure CreateVolumesFromImagesFromFolder(out ImgTrainingVolumes,ImgValidationVolumes,ImgTestVolumes:TNNetVolumeList;FolderName,pImageSubFolder:string;color_encoding:integer;TrainingProp,ValidationProp,TestProp:single;'+ NewSizeX:integer;NewSizeY:integer)');
+ CL.AddDelphiFunction('Procedure CreateFileNameListsFromImagesFromFolder( out TrainingFileNames, ValidationFileNames, TestFileNames : TFileNameList; FolderName, pImageSubFolder : string; TrainingProp, ValidationProp, TestProp : single)');
+ //Procedure LoadImageIntoVolume( M : TFPMemoryImage; Vol : TNNetVolume)');
+ //Procedure LoadVolumeIntoImage( Vol : TNNetVolume; M : TFPMemoryImage)');
+ Function LoadImageFromFileIntoVolume(ImageFileName:string; V:TNNetVolume): boolean');
+ Function SaveImageFromVolumeIntoFile(V:TNNetVolume;ImageFileName:string) : boolean');
+ Procedure ConfusionWriteCSVHeader(var CSVConfusion:TextFile;Labels array of string)');
+ Procedure ConfusionWriteCSV(var CSVConfusion:TextFile;Vol:TNNetVolume;Digits:integer);
+ Procedure LoadTinyImageIntoNNetVolume1( var TI : TTinyImage; Vol : TNNetVolume);');
+ Procedure LoadTinyImageIntoNNetVolume2(var TI: TCifar100Image; Vol : TNNetVolume);');
+ Procedure LoadTinyImageIntoNNetVolume3( var TI : TMNistImage; Vol : TNNetVolume);');
+ Procedure LoadNNetVolumeIntoTinyImage4( Vol : TNNetVolume; var TI : TTinyImage);');
+ Procedure LoadNNetVolumeIntoTinyImage5( Vol:TNNetVolume; var TI : TCifar100Image);');
+ Procedure LoadTinySingleChannelIntoNNetVolume(var SC:TTinySingleChannelImage;Vol: TNNetVolume)');
+ Procedure TinyImageCreateGrey(var TI:TTinyImage;var TIGrey:TTinySingleChannelImage)');
+ Procedure TinyImageHE( var TI, TIHE : TTinySingleChannelImage)');
+ Procedure TinyImageVE( var TI, TIVE : TTinySingleChannelImage)');
+ Procedure TinyImageRemoveZeroGradient(var TI:TTinySingleChannelImage;distance:byte)');
+ Procedure TinyImageHVE( var TI, TIHE : TTinySingleChannelImage)');
+ Function TinyImageTo1D( var TI:TTinySingleChannelImage): TTinySingleChannelImage1D');
+ Procedure CreateCifar10Volumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; color_encoding : byte)');
+ Procedure CreateCifar100Volumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; color_encoding : byte; Verbose : boolean)');
+ Procedure CreateMNISTVolumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; TrainFileName, TestFileName : string; Verbose : boolean; IsFashion : boolean)');
+ Procedure loadCifar10Dataset6(ImgVolumes : TNNetVolumeList; idx : integer; base_pos : integer; color_encoding : byte);');
+ Procedure loadCifar10Dataset7( ImgVolumes : TNNetVolumeList; fileName : string; base_pos : integer; color_encoding : byte);');
+ Procedure loadCifar100Dataset( ImgVolumes : TNNetVolumeList; fileName : string; color_encoding : byte; Verbose : boolean)');
+ Procedure loadMNISTDataset( ImgVolumes : TNNetVolumeList; fileName : string; Verbose : boolean; IsFashion : boolean; MaxLabel : integer);');
+ Function CheckCIFARFile( ) : boolean');
+ Function CheckCIFAR100File( ) : boolean');
+ Function CheckMNISTFile( fileName : string; IsFasion : boolean) : boolean');
+ Procedure TestBatch( NN : TNNet; ImgVolumes : TNNetVolumeList; SampleSize : integer; out Rate, Loss, ErrorSum : TNeuralFloat)');
+ Procedure TranslateCifar10VolumesToMachineAnimal( VolumeList : TNNetVolumeList)');
+ Function SwapEndian( I : integer) : integer');
+end;    *)
+
+
