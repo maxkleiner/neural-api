@@ -1,0 +1,392 @@
+Version:0.9
+StartHTML:0000000105
+EndHTML:0000066381
+StartFragment:0000001053
+EndFragment:0000066365
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>mXScriptasHTML</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta name="generator" content="SynEdit HTML exporter" />
+<style type="text/css">
+<!--
+body { color: #000000; background-color: #FFFFFF; }
+.pas1-assembler { }
+.pas1-character { color: #0066CC; text-decoration: underline; }
+.pas1-comment { color: #000080; font-style: italic; }
+.pas1-float { color: #00FF00; }
+.pas1-hexadecimal { color: #FF00FF; }
+.pas1-identifier { }
+.pas1-number { color: #FF0000; }
+.pas1-preprocessor { font-style: italic; }
+.pas1-reservedword { color: #000080; font-weight: bold; }
+.pas1-space { }
+.pas1-string { color: #008080; }
+.pas1-symbol { color: #FF0000; }
+-->
+</style>
+</head>
+<body>
+<!--StartFragment--><pre><code><span class="pas1-reservedword">unit</span><span class="pas1-space"> Uvisualcifar10test_mX4</span><span class="pas1-symbol">;
+
+</span><span class="pas1-comment">//{$mode objfpc}{$H+}
+//https://sourceforge.net/p/cai/svncode/HEAD/tree/trunk/lazarus/experiments/visualCifar10test/uvisualcifar10test.lfm
+
+</span><span class="pas1-reservedword">interface
+
+</span><span class="pas1-comment">{uses
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
+  ExtCtrls, neuralnetwork, neuraldatasetsv, neuralvolumev, neuraldatasets,
+  neuralvolume; }
+</span><span class="pas1-space">  
+</span><span class="pas1-reservedword">Const</span><span class="pas1-space"> PReModel_NN </span><span class="pas1-symbol">=</span><span class="pas1-space"> </span><span class="pas1-string">'SimpleSeparableImageClassifier124_50_2.nn'</span><span class="pas1-symbol">;</span><span class="pas1-space"> 
+      </span><span class="pas1-comment">//PReModel_NN = 'SimpleSeparableImageClassifier.nn';  
+</span><span class="pas1-space">      </span><span class="pas1-comment">//PReModel_NN = 'SimpleSeparableImageClassifier124.nn';
+</span><span class="pas1-space">      </span><span class="pas1-comment">//PReModel_NN = 'SimpleSeparableImageClassifier124_50_3.nn';
+
+</span><span class="pas1-reservedword">type
+
+</span><span class="pas1-space">  </span><span class="pas1-comment">{ TFormVisualLearning }
+
+</span><span class="pas1-space">  TFormVisualLearning </span><span class="pas1-symbol">=</span><span class="pas1-space"> </span><span class="pas1-comment">{class(}</span><span class="pas1-identifier">TForm</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">var
+</span><span class="pas1-space">    ButTest</span><span class="pas1-symbol">:</span><span class="pas1-space"> TButton</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    EdTestBinFile</span><span class="pas1-symbol">:</span><span class="pas1-space"> TEdit</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    ImgSample</span><span class="pas1-symbol">:</span><span class="pas1-space"> TImage</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    LabClassRate</span><span class="pas1-symbol">:</span><span class="pas1-space"> TLabel</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    LabTestFile</span><span class="pas1-symbol">:</span><span class="pas1-space"> TLabel</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    OpenDialogNN</span><span class="pas1-symbol">:</span><span class="pas1-space"> TOpenDialog</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    </span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningButTestClick</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">);
+</span><span class="pas1-space">    </span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningFormClose</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">;</span><span class="pas1-space"> </span><span class="pas1-reservedword">var</span><span class="pas1-space"> CloseAction</span><span class="pas1-symbol">:</span><span class="pas1-space"> TCloseAction</span><span class="pas1-symbol">);
+</span><span class="pas1-space">    </span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningFormCreate</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  </span><span class="pas1-comment">//private
+</span><span class="pas1-space">    </span><span class="pas1-comment">{ private declarations }
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">var
+</span><span class="pas1-space">    FRunning</span><span class="pas1-symbol">:</span><span class="pas1-space"> boolean</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    </span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningLearn</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  </span><span class="pas1-comment">//public
+</span><span class="pas1-space">    </span><span class="pas1-comment">{ public declarations }
+</span><span class="pas1-space">  </span><span class="pas1-comment">//end;
+
+</span><span class="pas1-reservedword">var
+</span><span class="pas1-space">  FormVisualLearning</span><span class="pas1-symbol">:</span><span class="pas1-space"> TFormVisualLearning</span><span class="pas1-symbol">;
+
+</span><span class="pas1-reservedword">implementation
+</span><span class="pas1-comment">//{$R *.lfm}
+
+{ TFormVisualLearning }
+
+</span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningButTestClick</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">);
+</span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">if</span><span class="pas1-space"> </span><span class="pas1-reservedword">not</span><span class="pas1-space"> CheckCIFARFile</span><span class="pas1-symbol">()</span><span class="pas1-space"> </span><span class="pas1-reservedword">then</span><span class="pas1-space"> writeln</span><span class="pas1-symbol">(</span><span class="pas1-string">'___NO cifar datasets found___'</span><span class="pas1-symbol">);</span><span class="pas1-space"> </span><span class="pas1-comment">//exit;
+
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">if</span><span class="pas1-space"> </span><span class="pas1-symbol">(</span><span class="pas1-identifier">FRunning</span><span class="pas1-symbol">)</span><span class="pas1-space"> </span><span class="pas1-reservedword">then</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">    FRunning </span><span class="pas1-symbol">:=</span><span class="pas1-space"> false</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    ButTest</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Caption </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Retest'</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    LabClassRate</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Caption </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'0%'</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">else</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">    </span><span class="pas1-comment">//if (OpenDialogNN.Execute()) then begin
+</span><span class="pas1-space">    OpenDialogNN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">filename </span><span class="pas1-symbol">:=</span><span class="pas1-space"> Exepath</span><span class="pas1-symbol">+</span><span class="pas1-identifier">PReModel_NN</span><span class="pas1-symbol">;</span><span class="pas1-space"> 
+      labtestfile</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Caption</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'CIFAR-10 testing file: '</span><span class="pas1-symbol">+</span><span class="pas1-identifier">Exepath</span><span class="pas1-symbol">+</span><span class="pas1-identifier">PReModel_NN</span><span class="pas1-symbol">;
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">if</span><span class="pas1-space"> FileExists</span><span class="pas1-symbol">(</span><span class="pas1-identifier">OpenDialogNN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">FileName</span><span class="pas1-symbol">)</span><span class="pas1-space"> </span><span class="pas1-reservedword">then</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">        FRunning </span><span class="pas1-symbol">:=</span><span class="pas1-space"> true</span><span class="pas1-symbol">;
+</span><span class="pas1-space">        ButTest</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Caption </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Stop'</span><span class="pas1-symbol">;
+</span><span class="pas1-space">        TFormVisualLearningLearn</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">);
+</span><span class="pas1-space">        FRunning </span><span class="pas1-symbol">:=</span><span class="pas1-space"> false</span><span class="pas1-symbol">;
+</span><span class="pas1-space">        ButTest</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Caption </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Retest'</span><span class="pas1-symbol">;
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  </span><span class="pas1-comment">//end;
+</span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningFormClose</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">var</span><span class="pas1-space"> CloseAction</span><span class="pas1-symbol">:</span><span class="pas1-space"> TCloseAction</span><span class="pas1-symbol">);
+</span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">  FRunning </span><span class="pas1-symbol">:=</span><span class="pas1-space"> false</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  writeln</span><span class="pas1-symbol">(</span><span class="pas1-string">'closed action...'</span><span class="pas1-symbol">);
+</span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningFormCreate</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">);
+</span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">  FRunning </span><span class="pas1-symbol">:=</span><span class="pas1-space"> false</span><span class="pas1-symbol">;
+</span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> TFormVisualLearningLearn</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Sender</span><span class="pas1-symbol">:</span><span class="pas1-space"> TObject</span><span class="pas1-symbol">);
+</span><span class="pas1-reservedword">var
+</span><span class="pas1-space">  NN</span><span class="pas1-symbol">:</span><span class="pas1-space"> TNNet</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  I</span><span class="pas1-symbol">:</span><span class="pas1-space"> integer</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  ImgVolumes</span><span class="pas1-symbol">:</span><span class="pas1-space"> TNNetVolumeList</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  Volume</span><span class="pas1-symbol">:</span><span class="pas1-space"> TNNetVolume</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  pOutput</span><span class="pas1-symbol">,</span><span class="pas1-space"> vOutput</span><span class="pas1-symbol">,</span><span class="pas1-space"> vDisplay</span><span class="pas1-symbol">:</span><span class="pas1-space"> TNNetVolume</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  hit</span><span class="pas1-symbol">,</span><span class="pas1-space"> miss</span><span class="pas1-symbol">:</span><span class="pas1-space"> integer</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  NumClasses</span><span class="pas1-symbol">:</span><span class="pas1-space"> integer</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  ErrorSum</span><span class="pas1-symbol">,</span><span class="pas1-space"> LastError</span><span class="pas1-symbol">:</span><span class="pas1-space"> TNeuralFloat</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  startTime</span><span class="pas1-symbol">,</span><span class="pas1-space"> totalTimeSeconds</span><span class="pas1-symbol">:</span><span class="pas1-space"> double</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  aImage</span><span class="pas1-symbol">:</span><span class="pas1-space"> </span><span class="pas1-reservedword">array</span><span class="pas1-space"> </span><span class="pas1-reservedword">of</span><span class="pas1-space"> TImage</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  NeuronCount</span><span class="pas1-symbol">:</span><span class="pas1-space"> integer</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  ImgIdx</span><span class="pas1-symbol">:</span><span class="pas1-space"> integer</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  MaxW</span><span class="pas1-symbol">,</span><span class="pas1-space"> MinW</span><span class="pas1-symbol">:</span><span class="pas1-space"> TNeuralFloat</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  fileName</span><span class="pas1-symbol">:</span><span class="pas1-space"> </span><span class="pas1-reservedword">string</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  firstNeuronalLayer</span><span class="pas1-symbol">:</span><span class="pas1-space"> integer</span><span class="pas1-symbol">;
+</span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">  writeln</span><span class="pas1-symbol">(</span><span class="pas1-string">'Creating CNeural Network...'</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  ImgVolumes </span><span class="pas1-symbol">:=</span><span class="pas1-space"> TNNetVolumeList</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">true</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  NumClasses </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">10;
+
+</span><span class="pas1-space">  fileName </span><span class="pas1-symbol">:=</span><span class="pas1-space"> Exepath</span><span class="pas1-symbol">+</span><span class="pas1-identifier">PReModel_NN</span><span class="pas1-symbol">;</span><span class="pas1-space"> </span><span class="pas1-comment">//OpenDialogNN.FileName;
+
+</span><span class="pas1-space">  </span><span class="pas1-comment">//--------------------------------------------------------------------
+</span><span class="pas1-space">  </span><span class="pas1-comment">// creates required volumes to store images
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">for</span><span class="pas1-space"> I </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0</span><span class="pas1-space"> </span><span class="pas1-reservedword">to</span><span class="pas1-space"> </span><span class="pas1-number">9999</span><span class="pas1-space"> </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">    Volume </span><span class="pas1-symbol">:=</span><span class="pas1-space"> TNNetVolume</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Create</span><span class="pas1-symbol">();
+</span><span class="pas1-space">    ImgVolumes</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Add</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Volume</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  </span><span class="pas1-comment">//--------------------------------------------------------------------
+
+</span><span class="pas1-space">  NN </span><span class="pas1-symbol">:=</span><span class="pas1-space"> TNNet</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Create</span><span class="pas1-symbol">();
+
+</span><span class="pas1-space">  writeln</span><span class="pas1-symbol">(</span><span class="pas1-string">'Loading neural network from file: '</span><span class="pas1-symbol">+</span><span class="pas1-identifier">fileName</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">LoadFromFile</span><span class="pas1-symbol">(</span><span class="pas1-identifier">fileName</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">EnableDropouts</span><span class="pas1-symbol">(</span><span class="pas1-identifier">false</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  firstNeuronalLayer </span><span class="pas1-symbol">:=</span><span class="pas1-space"> NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">GetFirstNeuronalLayerIdx</span><span class="pas1-symbol">(0);
+
+</span><span class="pas1-space">  pOutput </span><span class="pas1-symbol">:=</span><span class="pas1-space"> TNNetVolume</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Create0</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NumClasses</span><span class="pas1-symbol">,1,1,0);</span><span class="pas1-space">   </span><span class="pas1-comment">//or 1
+</span><span class="pas1-space">  vOutput </span><span class="pas1-symbol">:=</span><span class="pas1-space"> TNNetVolume</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Create0</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NumClasses</span><span class="pas1-symbol">,1,1,0);
+</span><span class="pas1-space">  vDisplay</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TNNetVolume</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Create0</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NumClasses</span><span class="pas1-symbol">,1,1,0);
+
+</span><span class="pas1-space">  SetLength</span><span class="pas1-symbol">(</span><span class="pas1-identifier">aImage</span><span class="pas1-symbol">,</span><span class="pas1-space"> NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Count</span><span class="pas1-symbol">);
+
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">for</span><span class="pas1-space"> NeuronCount </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0</span><span class="pas1-space"> </span><span class="pas1-reservedword">to</span><span class="pas1-space"> NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Count</span><span class="pas1-symbol">-</span><span class="pas1-space"> </span><span class="pas1-number">1</span><span class="pas1-space"> </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">]:=</span><span class="pas1-space"> TImage</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">FormVisualLearning</span><span class="pas1-symbol">);
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Parent </span><span class="pas1-symbol">:=</span><span class="pas1-space"> FormVisualLearning</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Width  </span><span class="pas1-symbol">:=</span><span class="pas1-space"> 
+              NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Weights</span><span class="pas1-symbol">.</span><span class="pas1-identifier">SizeX</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Height </span><span class="pas1-symbol">:=</span><span class="pas1-space"> 
+              NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Weights</span><span class="pas1-symbol">.</span><span class="pas1-identifier">SizeY</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Top    </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-symbol">(</span><span class="pas1-identifier">NeuronCount </span><span class="pas1-reservedword">div</span><span class="pas1-space"> </span><span class="pas1-number">12)</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">38</span><span class="pas1-space"> </span><span class="pas1-symbol">+</span><span class="pas1-space"> </span><span class="pas1-number">160;</span><span class="pas1-space">   </span><span class="pas1-comment">//120
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Left   </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-symbol">(</span><span class="pas1-identifier">NeuronCount </span><span class="pas1-reservedword">mod</span><span class="pas1-space"> </span><span class="pas1-number">12)</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">38</span><span class="pas1-space"> </span><span class="pas1-symbol">+</span><span class="pas1-space"> </span><span class="pas1-number">60;
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Stretch</span><span class="pas1-symbol">:=</span><span class="pas1-identifier">true</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">  NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">DebugWeights</span><span class="pas1-symbol">();
+</span><span class="pas1-space">  </span><span class="pas1-comment">//WriteLn(' Layers: ',  NN.CountLayers()  );
+</span><span class="pas1-space">  </span><span class="pas1-comment">//WriteLn(' Neurons:',  NN.CountNeurons() );
+</span><span class="pas1-space">  </span><span class="pas1-comment">//WriteLn(' Weights:' , NN.CountWeights() );
+</span><span class="pas1-space">  WriteLn</span><span class="pas1-symbol">(</span><span class="pas1-string">'Neural CNN network has: '</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  WriteLn</span><span class="pas1-symbol">(</span><span class="pas1-string">' Layers: '</span><span class="pas1-symbol">+</span><span class="pas1-space"> itoa</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">CountLayers</span><span class="pas1-symbol">()</span><span class="pas1-space">  </span><span class="pas1-symbol">));
+</span><span class="pas1-space">  WriteLn</span><span class="pas1-symbol">(</span><span class="pas1-string">' Neurons: '</span><span class="pas1-symbol">+</span><span class="pas1-space"> itoa</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">CountNeurons</span><span class="pas1-symbol">()</span><span class="pas1-space"> </span><span class="pas1-symbol">));
+</span><span class="pas1-space">  WriteLn</span><span class="pas1-symbol">(</span><span class="pas1-string">' Weights: '</span><span class="pas1-symbol">+</span><span class="pas1-space"> itoa</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">CountWeights</span><span class="pas1-symbol">()</span><span class="pas1-space"> </span><span class="pas1-symbol">));
+</span><span class="pas1-space">  WriteLn</span><span class="pas1-symbol">(</span><span class="pas1-string">'Computing...'</span><span class="pas1-symbol">);
+
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">    hit  </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0;
+</span><span class="pas1-space">    miss </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0;
+</span><span class="pas1-space">    ErrorSum </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0;
+</span><span class="pas1-space">    LastError </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0;
+</span><span class="pas1-space">    startTime </span><span class="pas1-symbol">:=</span><span class="pas1-space"> Now</span><span class="pas1-symbol">();
+</span><span class="pas1-space">    </span><span class="pas1-comment">//loadCifar10Dataset(ImgVolumes, EdTestBinFile.Text);  //&quot;data_batch_5.bin&quot;
+</span><span class="pas1-space">    loadCifar10Dataset2</span><span class="pas1-symbol">(</span><span class="pas1-identifier">ImgVolumes</span><span class="pas1-symbol">,</span><span class="pas1-space"> </span><span class="pas1-number">5,</span><span class="pas1-space"> </span><span class="pas1-number">0,</span><span class="pas1-space"> csEncodeRGB</span><span class="pas1-symbol">);</span><span class="pas1-space">   </span><span class="pas1-comment">//test batch file
+</span><span class="pas1-space">    WriteLn</span><span class="pas1-symbol">(</span><span class="pas1-string">' Totalsize: '</span><span class="pas1-symbol">+</span><span class="pas1-space"> itoa</span><span class="pas1-symbol">(</span><span class="pas1-identifier">ImgVolumes</span><span class="pas1-symbol">.</span><span class="pas1-identifier">gettotalsize</span><span class="pas1-symbol">));
+</span><span class="pas1-space">    </span><span class="pas1-reservedword">for</span><span class="pas1-space"> I </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0</span><span class="pas1-space"> </span><span class="pas1-reservedword">to</span><span class="pas1-space"> ImgVolumes</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Count </span><span class="pas1-symbol">-</span><span class="pas1-space"> </span><span class="pas1-number">1</span><span class="pas1-space"> </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">if</span><span class="pas1-space"> </span><span class="pas1-reservedword">not</span><span class="pas1-symbol">(</span><span class="pas1-identifier">FRunning</span><span class="pas1-symbol">)</span><span class="pas1-space"> </span><span class="pas1-reservedword">then</span><span class="pas1-space"> Break</span><span class="pas1-symbol">;
+</span><span class="pas1-space">      ImgIdx </span><span class="pas1-symbol">:=</span><span class="pas1-space"> Random</span><span class="pas1-symbol">(</span><span class="pas1-identifier">ImgVolumes</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Count</span><span class="pas1-symbol">);
+</span><span class="pas1-space">      </span><span class="pas1-comment">//-- CAREFUL
+</span><span class="pas1-space">      </span><span class="pas1-comment">//procedure Compute(pInput: TNNetVolume; FromLayerIdx:integer = 0); overload;
+</span><span class="pas1-space">      NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Compute65</span><span class="pas1-symbol">(</span><span class="pas1-identifier">ImgVolumes</span><span class="pas1-symbol">[</span><span class="pas1-identifier">ImgIdx</span><span class="pas1-symbol">],0);
+</span><span class="pas1-space">      NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">GetOutput</span><span class="pas1-symbol">(</span><span class="pas1-identifier">pOutput</span><span class="pas1-symbol">);
+
+</span><span class="pas1-space">      vOutput</span><span class="pas1-symbol">.</span><span class="pas1-identifier">SetClassForReLU</span><span class="pas1-symbol">(</span><span class="pas1-space"> ImgVolumes</span><span class="pas1-symbol">[</span><span class="pas1-identifier">ImgIdx</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Tag </span><span class="pas1-symbol">);</span><span class="pas1-space"> </span><span class="pas1-comment">// ReLU - no softmax
+</span><span class="pas1-space">      </span><span class="pas1-comment">//ErrorSum += vOutput.SumDiff(pOutput);
+</span><span class="pas1-space">      ErrorSum</span><span class="pas1-symbol">:=</span><span class="pas1-space"> ErrorSum </span><span class="pas1-symbol">+</span><span class="pas1-identifier">vOutput</span><span class="pas1-symbol">.</span><span class="pas1-identifier">SumDiff</span><span class="pas1-symbol">(</span><span class="pas1-identifier">pOutput</span><span class="pas1-symbol">);
+
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">if</span><span class="pas1-space"> I </span><span class="pas1-reservedword">mod</span><span class="pas1-space"> </span><span class="pas1-number">1000</span><span class="pas1-space"> </span><span class="pas1-symbol">=</span><span class="pas1-space"> </span><span class="pas1-number">0</span><span class="pas1-space"> </span><span class="pas1-reservedword">then</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">        vDisplay</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Copy</span><span class="pas1-symbol">(</span><span class="pas1-identifier">ImgVolumes</span><span class="pas1-symbol">[</span><span class="pas1-identifier">ImgIdx</span><span class="pas1-symbol">]);
+</span><span class="pas1-space">        vDisplay</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Mul26</span><span class="pas1-symbol">(64);
+</span><span class="pas1-space">        vDisplay</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Add13</span><span class="pas1-symbol">(128);
+
+</span><span class="pas1-space">        LoadVolumeIntoTImage</span><span class="pas1-symbol">(</span><span class="pas1-identifier">vDisplay</span><span class="pas1-symbol">,</span><span class="pas1-space"> ImgSample</span><span class="pas1-symbol">,</span><span class="pas1-space"> csEncodeRGB</span><span class="pas1-symbol">);
+</span><span class="pas1-space">        ImgSample</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Width </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">64+40;
+</span><span class="pas1-space">        ImgSample</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Height </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">64+40;
+</span><span class="pas1-space">        </span><span class="pas1-comment">//ImgSample.Stretch:= True;
+
+</span><span class="pas1-space">        </span><span class="pas1-comment">//inc(firstNeuronalLayer);
+</span><span class="pas1-space">        </span><span class="pas1-reservedword">for</span><span class="pas1-space"> NeuronCount</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0</span><span class="pas1-space"> </span><span class="pas1-reservedword">to</span><span class="pas1-space"> NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Count </span><span class="pas1-symbol">-</span><span class="pas1-space"> </span><span class="pas1-number">1</span><span class="pas1-space"> </span><span class="pas1-reservedword">do
+</span><span class="pas1-space">        </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">          MaxW</span><span class="pas1-symbol">:=</span><span class="pas1-space"> NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Weights</span><span class="pas1-symbol">.</span><span class="pas1-identifier">GetMax</span><span class="pas1-symbol">();
+</span><span class="pas1-space">          MinW</span><span class="pas1-symbol">:=</span><span class="pas1-space"> NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Weights</span><span class="pas1-symbol">.</span><span class="pas1-identifier">GetMin</span><span class="pas1-symbol">();
+</span><span class="pas1-space">          vDisplay</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Copy</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Layers</span><span class="pas1-symbol">[</span><span class="pas1-identifier">firstNeuronalLayer</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Neurons</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Weights</span><span class="pas1-symbol">);
+</span><span class="pas1-space">          vDisplay</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Mul26</span><span class="pas1-symbol">(256/(</span><span class="pas1-identifier">MaxW</span><span class="pas1-symbol">-</span><span class="pas1-identifier">MinW</span><span class="pas1-symbol">));
+</span><span class="pas1-space">          vDisplay</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Add13</span><span class="pas1-symbol">(128);
+</span><span class="pas1-space">          LoadVolumeIntoTImage</span><span class="pas1-symbol">(</span><span class="pas1-identifier">vDisplay</span><span class="pas1-symbol">,</span><span class="pas1-space"> aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">],</span><span class="pas1-identifier">csEncodeRGB</span><span class="pas1-symbol">);
+</span><span class="pas1-space">          aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Width </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">35;
+</span><span class="pas1-space">          aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">35;
+</span><span class="pas1-space">          </span><span class="pas1-comment">//aImage[NeuronCount].Stretch:= True;
+</span><span class="pas1-space">        </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">        Application</span><span class="pas1-symbol">.</span><span class="pas1-identifier">ProcessMessages</span><span class="pas1-symbol">();
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">      Application</span><span class="pas1-symbol">.</span><span class="pas1-identifier">ProcessMessages</span><span class="pas1-symbol">();
+
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">if</span><span class="pas1-space"> pOutput</span><span class="pas1-symbol">.</span><span class="pas1-identifier">GetClass</span><span class="pas1-symbol">()</span><span class="pas1-space"> </span><span class="pas1-symbol">=</span><span class="pas1-space"> ImgVolumes</span><span class="pas1-symbol">[</span><span class="pas1-identifier">ImgIdx</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Tag </span><span class="pas1-reservedword">then</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">        Inc</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Hit</span><span class="pas1-symbol">);
+</span><span class="pas1-space">        </span><span class="pas1-comment">//WriteLn(' Tag Label: '+ itoa(ImgVolumes[ImgIdx].Tag));
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">end</span><span class="pas1-space"> </span><span class="pas1-reservedword">else</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">        Inc</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Miss</span><span class="pas1-symbol">);
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">if</span><span class="pas1-space"> </span><span class="pas1-symbol">(</span><span class="pas1-identifier">Hit</span><span class="pas1-symbol">&gt;0)</span><span class="pas1-space"> </span><span class="pas1-reservedword">and</span><span class="pas1-space"> </span><span class="pas1-symbol">(</span><span class="pas1-identifier">I</span><span class="pas1-symbol">&gt;0)</span><span class="pas1-space"> </span><span class="pas1-reservedword">and</span><span class="pas1-space"> </span><span class="pas1-symbol">((</span><span class="pas1-identifier">I</span><span class="pas1-symbol">+1)</span><span class="pas1-space"> </span><span class="pas1-reservedword">mod</span><span class="pas1-space"> </span><span class="pas1-number">1000</span><span class="pas1-space"> </span><span class="pas1-symbol">=</span><span class="pas1-space"> </span><span class="pas1-number">0)</span><span class="pas1-space"> </span><span class="pas1-reservedword">then</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">        totalTimeSeconds </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-symbol">(</span><span class="pas1-identifier">Now</span><span class="pas1-symbol">()</span><span class="pas1-space"> </span><span class="pas1-symbol">-</span><span class="pas1-space"> startTime</span><span class="pas1-symbol">)</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">24</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">60</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">60;
+</span><span class="pas1-space">        WriteLn
+        </span><span class="pas1-symbol">(
+</span><span class="pas1-space">         </span><span class="pas1-comment">{ I+1, ' Accuracy:'+ Hit/(Hit+Miss):6:4,
+          ' Error:', (ErrorSum-LastError):10:5,
+          ' Time:', totalTimeSeconds:6:2,'s',
+          ' Forward:', (NN.ForwardTime * 24 * 60 * 60):6:2,'s',
+          ' Backward:', (NN.BackwardTime * 24 * 60 * 60):6:2,'s' }
+</span><span class="pas1-space">          itoa</span><span class="pas1-symbol">(</span><span class="pas1-identifier">I</span><span class="pas1-symbol">+1)+</span><span class="pas1-space"> </span><span class="pas1-string">' Accuracy:'</span><span class="pas1-symbol">+</span><span class="pas1-space"> flots</span><span class="pas1-symbol">(</span><span class="pas1-identifier">Hit</span><span class="pas1-symbol">/(</span><span class="pas1-identifier">Hit</span><span class="pas1-symbol">+</span><span class="pas1-identifier">Miss</span><span class="pas1-symbol">))+
+</span><span class="pas1-space">          </span><span class="pas1-string">' Error:'</span><span class="pas1-symbol">+</span><span class="pas1-identifier">flots</span><span class="pas1-symbol">((</span><span class="pas1-identifier">ErrorSum</span><span class="pas1-symbol">-</span><span class="pas1-identifier">LastError</span><span class="pas1-symbol">))+
+</span><span class="pas1-space">          </span><span class="pas1-string">' Time:'</span><span class="pas1-symbol">+</span><span class="pas1-identifier">flots</span><span class="pas1-symbol">(</span><span class="pas1-identifier">totalTimeSeconds</span><span class="pas1-symbol">)+</span><span class="pas1-string">'s'</span><span class="pas1-symbol">+
+</span><span class="pas1-space">          </span><span class="pas1-string">' Forward:'</span><span class="pas1-symbol">+</span><span class="pas1-space"> flots</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">ForwardTime </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">24</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">60</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">60)+</span><span class="pas1-string">'s'</span><span class="pas1-symbol">+
+</span><span class="pas1-space">          </span><span class="pas1-string">' Backward:'</span><span class="pas1-symbol">+</span><span class="pas1-identifier">flots</span><span class="pas1-symbol">(</span><span class="pas1-identifier">NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">BackwardTime </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">24</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">60</span><span class="pas1-space"> </span><span class="pas1-symbol">*</span><span class="pas1-space"> </span><span class="pas1-number">60)+</span><span class="pas1-string">'s'</span><span class="pas1-space">  
+        </span><span class="pas1-symbol">);
+</span><span class="pas1-space">        NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">ClearTime</span><span class="pas1-symbol">();
+
+</span><span class="pas1-space">        LabClassRate</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Caption</span><span class="pas1-symbol">:=</span><span class="pas1-space"> format</span><span class="pas1-symbol">(</span><span class="pas1-string">'%.2f%% '</span><span class="pas1-symbol">,[(</span><span class="pas1-identifier">Hit</span><span class="pas1-symbol">*100)/(</span><span class="pas1-identifier">Hit</span><span class="pas1-symbol">+</span><span class="pas1-identifier">Miss</span><span class="pas1-symbol">)]);
+
+</span><span class="pas1-space">        startTime </span><span class="pas1-symbol">:=</span><span class="pas1-space"> Now</span><span class="pas1-symbol">();
+</span><span class="pas1-space">        LastError </span><span class="pas1-symbol">:=</span><span class="pas1-space"> ErrorSum</span><span class="pas1-symbol">;
+</span><span class="pas1-space">        Application</span><span class="pas1-symbol">.</span><span class="pas1-identifier">ProcessMessages</span><span class="pas1-symbol">;
+</span><span class="pas1-space">      </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">    </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">    NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">DebugWeights</span><span class="pas1-symbol">();
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">for</span><span class="pas1-space"> NeuronCount </span><span class="pas1-symbol">:=</span><span class="pas1-space"> Low</span><span class="pas1-symbol">(</span><span class="pas1-identifier">aImage</span><span class="pas1-symbol">)</span><span class="pas1-space"> </span><span class="pas1-reservedword">to</span><span class="pas1-space"> High</span><span class="pas1-symbol">(</span><span class="pas1-identifier">aImage</span><span class="pas1-symbol">)</span><span class="pas1-space"> </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">    aImage</span><span class="pas1-symbol">[</span><span class="pas1-identifier">NeuronCount</span><span class="pas1-symbol">].</span><span class="pas1-identifier">Free</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">  LabClassRate</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Caption </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'0%'</span><span class="pas1-symbol">;
+
+</span><span class="pas1-space">  vDisplay</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Free</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  NN</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Free</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  vOutput</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Free</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  pOutput</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Free</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  ImgVolumes</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Free</span><span class="pas1-symbol">;
+</span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+
+</span><span class="pas1-reservedword">procedure</span><span class="pas1-space"> loadCifarForm</span><span class="pas1-symbol">;
+</span><span class="pas1-reservedword">begin
+</span><span class="pas1-identifier">FormVisualLearning</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TFormVisualLearning</span><span class="pas1-symbol">.</span><span class="pas1-identifier">create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">self</span><span class="pas1-symbol">)
+</span><span class="pas1-reservedword">with</span><span class="pas1-space"> FormVisualLearning </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">  Left </span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">2664
+</span><span class="pas1-space">  Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">616
+</span><span class="pas1-space">  Top</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">194
+</span><span class="pas1-space">  Width</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">964
+</span><span class="pas1-space">  Caption</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Visual CIFAR-10 NN Testing maXbox4'
+</span><span class="pas1-space">  ClientHeight</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">616
+</span><span class="pas1-space">  ClientWidth</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">964
+</span><span class="pas1-space">  </span><span class="pas1-comment">//DesignTimePPI:= 120
+</span><span class="pas1-space">  OnClose</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-symbol">@</span><span class="pas1-identifier">TFormVisualLearningFormClose</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  OnCreate</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-symbol">@</span><span class="pas1-identifier">TFormVisualLearningFormCreate</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  Position</span><span class="pas1-symbol">:=</span><span class="pas1-space"> poScreenCenter
+  icon</span><span class="pas1-symbol">.</span><span class="pas1-identifier">loadfromresourcename</span><span class="pas1-symbol">(</span><span class="pas1-identifier">hinstance</span><span class="pas1-symbol">,</span><span class="pas1-string">'XDIRECTX'</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  </span><span class="pas1-comment">//LCLVersion:= '2.0.2.0'
+</span><span class="pas1-space">  Show</span><span class="pas1-symbol">();
+</span><span class="pas1-space">  ButTest</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TButton</span><span class="pas1-symbol">.</span><span class="pas1-identifier">create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">self</span><span class="pas1-symbol">)
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">with</span><span class="pas1-space"> buttest </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">   parent</span><span class="pas1-symbol">:=</span><span class="pas1-space"> FormVisualLearning</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    Left</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">350
+</span><span class="pas1-space">    Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">31
+</span><span class="pas1-space">    Top</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">100
+</span><span class="pas1-space">    Width</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">200
+</span><span class="pas1-space">    Caption</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Test Neural Network'
+</span><span class="pas1-space">    OnClick</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-symbol">@</span><span class="pas1-identifier">TFormVisualLearningButTestClick
+    ParentFont</span><span class="pas1-symbol">:=</span><span class="pas1-space"> False
+    TabOrder</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">0
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  ImgSample</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TImage</span><span class="pas1-symbol">.</span><span class="pas1-identifier">create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">self</span><span class="pas1-symbol">)
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">with</span><span class="pas1-space"> imgsample </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">   parent</span><span class="pas1-symbol">:=</span><span class="pas1-space"> FormVisualLearning</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    Left</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">15
+</span><span class="pas1-space">    Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">33
+</span><span class="pas1-space">    Top</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">15
+</span><span class="pas1-space">    Width</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">34
+</span><span class="pas1-space">    Stretch</span><span class="pas1-symbol">:=</span><span class="pas1-space"> True
+  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  LabTestFile</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TLabel</span><span class="pas1-symbol">.</span><span class="pas1-identifier">create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">self</span><span class="pas1-symbol">)
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">with</span><span class="pas1-space"> labtestfile </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">   parent</span><span class="pas1-symbol">:=</span><span class="pas1-space"> FormVisualLearning</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    Left</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">350
+</span><span class="pas1-space">    Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">20
+</span><span class="pas1-space">    Top</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">10
+</span><span class="pas1-space">    Width</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">137
+</span><span class="pas1-space">    Caption</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'CIFAR-10 testing file:'
+</span><span class="pas1-space">    ParentColor</span><span class="pas1-symbol">:=</span><span class="pas1-space"> False
+    ParentFont</span><span class="pas1-symbol">:=</span><span class="pas1-space"> False
+  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  EdTestBinFile</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TEdit</span><span class="pas1-symbol">.</span><span class="pas1-identifier">create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">self</span><span class="pas1-symbol">)
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">with</span><span class="pas1-space">  EdTestBinFile </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">   parent</span><span class="pas1-symbol">:=</span><span class="pas1-space"> FormVisualLearning</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    Left</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">350
+</span><span class="pas1-space">    Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">28
+</span><span class="pas1-space">    Top</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">50
+</span><span class="pas1-space">    Width</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">220
+</span><span class="pas1-space">    ParentFont</span><span class="pas1-symbol">:=</span><span class="pas1-space"> False
+    TabOrder</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">1
+</span><span class="pas1-space">    Text</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'test_batch.bin'
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  LabClassRate</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TLabel</span><span class="pas1-symbol">.</span><span class="pas1-identifier">create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">self</span><span class="pas1-symbol">)
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">with</span><span class="pas1-space"> labclassrate </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">   parent</span><span class="pas1-symbol">:=</span><span class="pas1-space"> FormVisualLearning</span><span class="pas1-symbol">;
+</span><span class="pas1-space">    Left</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">130
+</span><span class="pas1-space">    Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">57
+</span><span class="pas1-space">    Top</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">10
+</span><span class="pas1-space">    Width</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-number">72
+</span><span class="pas1-space">    Caption</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'0%'
+</span><span class="pas1-space">    Font</span><span class="pas1-symbol">.</span><span class="pas1-identifier">CharSet</span><span class="pas1-symbol">:=</span><span class="pas1-space"> ANSI_CHARSET
+    Font</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Height</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-symbol">-50
+</span><span class="pas1-space">    Font</span><span class="pas1-symbol">.</span><span class="pas1-identifier">Name</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Arial'
+</span><span class="pas1-space">    </span><span class="pas1-comment">//Font.Pitch:= fpVariable;
+</span><span class="pas1-space">    </span><span class="pas1-comment">//Font.Quality:= fqDraft
+</span><span class="pas1-space">    ParentColor</span><span class="pas1-symbol">:=</span><span class="pas1-space"> False
+    ParentFont</span><span class="pas1-symbol">:=</span><span class="pas1-space"> False
+  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space">  OpenDialogNN</span><span class="pas1-symbol">:=</span><span class="pas1-space"> TOpenDialog</span><span class="pas1-symbol">.</span><span class="pas1-identifier">create</span><span class="pas1-symbol">(</span><span class="pas1-identifier">self</span><span class="pas1-symbol">);
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">with</span><span class="pas1-space"> opendialognn </span><span class="pas1-reservedword">do</span><span class="pas1-space"> </span><span class="pas1-reservedword">begin
+</span><span class="pas1-space">    Title</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Open existing Neural Network file'
+</span><span class="pas1-space">    Filter</span><span class="pas1-symbol">:=</span><span class="pas1-space"> </span><span class="pas1-string">'Neural Network|*.nn'
+</span><span class="pas1-space">    </span><span class="pas1-comment">//left:= 650   //top:= 20
+</span><span class="pas1-space">  </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-space"> </span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;
+</span><span class="pas1-reservedword">end</span><span class="pas1-symbol">;</span><span class="pas1-space"> 
+
+</span><span class="pas1-reservedword">begin</span><span class="pas1-space"> </span><span class="pas1-comment">//@main
+
+</span><span class="pas1-space"> loadCifarForm</span><span class="pas1-symbol">();
+
+</span><span class="pas1-reservedword">End</span><span class="pas1-symbol">.
+</span><span class="pas1-reservedword">end</span><span class="pas1-symbol">.
+
+</span><span class="pas1-reservedword">ref</span><span class="pas1-symbol">:</span><span class="pas1-space"> </span><span class="pas1-comment">{   csMachineAnimalCifar10Labels: array[0..9] of string =
+  (
+    'airplane',
+    'automobile',
+    'ship',  // used to be bird
+    'truck', // used to be cat
+    'deer',  // used to be deer
+    'dog',   // used to be dog
+    'frog',  // used to be frog
+    'horse', // used to be horse
+    'bird',  // used to be ship
+    'cat'    // used to be truck
+  );  }
+
+
+</span></code></pre><!--EndFragment--></body>
+</html>
