@@ -1,0 +1,400 @@
+Hot Log Script started
+Compiling  maXbox4 395 lines
+Codelines in window: 21
+Macro Expanded 395 lines
+C:\maXbox\works2021\maxbox4\examples\1135_uvisualcifar10test_mX4_1.pas File stored
+1135_uvisualcifar10test_mX4_1.pas in maxboxdef.ini stored: 21:36:02
+XCompiler Message Count: 0
+ maXbox4 1135_uvisualcifar10test_mX4_1.pas Compiled done: 06/07/2022 21:36:02
+--------------------------------------------------------
+ mX4 executed: 06/07/2022 21:36:02  Runtime: 0:0:1.621  Memload: 48% use
+PascalScript maXbox4 - RemObjects & SynEdit
+Creating CNeural Network...
+Loading neural network from file: C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin\SimpleSeparableImageClassifier124_50_2.nn
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:32;5;2;1;0;0;0;0
+1)TNNetMaxPool:4;4;0;0;0;0;0;0
+2)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+3)TNNetPointwiseConvReLU:32;1;0;1;0;0;0;0
+4)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+5)TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+6)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+7)TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+8)TNNetDropout:2;1;0;0;0;0;0;0
+9)TNNetMaxPool:2;2;0;0;0;0;0;0
+10)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+11)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:32;5;2;1;0;0;0;0
+debug createLayer():TNNetMaxPool-addLayerAfter1...TNNetMaxPool:4;4;0;0;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter2...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter3...TNNetPointwiseConvReLU:32;1;0;1;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter4...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter5...TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter6...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter7...TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter8...TNNetDropout:2;1;0;0;0;0;0;0
+debug createLayer():TNNetMaxPool-addLayerAfter9...TNNetMaxPool:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter10...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter11...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug TNNet Loaded Data Layers:13  SCount:13
+Layer 0                            Max Output: 0 Min Output: 0 TNNetInput 32,32,3
+ Times: 0s 0s
+debug weights end.....
+Layer 1 Neurons:32 Max Weight: 0.60093766450882 Min Weight: -0.756638646125793 Max Output: 0 Min Output: 0 TNNetConvolutionLinear 32,32,32
+ Times: 0s 0s
+ Parent:0
+Layer 2                            Max Output: 0 Min Output: 0 TNNetMaxPool 8,8,32
+ Times: 0s 0s
+ Parent:1
+Layer 3 Neurons:1 Max Weight: 0.7721146941185 Min Weight: -0.883341252803802 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:2
+Layer 4 Neurons:32 Max Weight: 0.698704540729523 Min Weight: -0.6801518201828 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,32
+ Times: 0s 0s
+ Parent:3
+Layer 5 Neurons:1 Max Weight: 0.646364271640778 Min Weight: -0.738092005252838 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:4
+Layer 6 Neurons:64 Max Weight: 0.49970743060112 Min Weight: -0.550501704216003 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:5
+Layer 7 Neurons:1 Max Weight: 0.674006640911102 Min Weight: -0.701909899711609 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,64
+ Times: 0s 0s
+ Parent:6
+Layer 8 Neurons:64 Max Weight: 0.445383816957474 Min Weight: -0.477764546871185 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:7
+Layer 9                            Max Output: 0 Min Output: 0 TNNetDropout 8,8,64
+ Times: 0s 0s
+ Parent:8
+Layer 10                            Max Output: 0 Min Output: 0 TNNetMaxPool 4,4,64
+ Times: 0s 0s
+ Parent:9
+Layer 11 Neurons:10 Max Weight: 0.310597538948059 Min Weight: -0.283836781978607 Max Output: 0 Min Output: 0 TNNetFullConnectLinear 10,1,1
+ Times: 0s 0s
+ Parent:10
+Layer 12                            Max Output: 0 Min Output: 0 TNNetSoftMax 10,1,1
+ Times: 0s 0s
+ Parent:11
+Neural CNN network has: 
+ Layers: 13
+ Neurons: 205
+ Weights: 20960
+Computing...
+Loading 10K images from file "data_batch_5.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+ Totalsize: 30720000
+1000 Accuracy:0.738 Error:2663.677001953125 Time:9.668999933637679s Forward:8.761996706016362s Backward:0s
+2000 Accuracy:0.7405 Error:2672.947998046875 Time:10.404999763704836s Forward:8.85599828325212s Backward:0s
+3000 Accuracy:0.729666666666667 Error:2696.2021484375 Time:9.059000224806368s Forward:8.784996857866645s Backward:0s
+4000 Accuracy:0.73225 Error:2663.8759765625 Time:9.052000287920237s Forward:8.802997414022684s Backward:0s
+5000 Accuracy:0.7312 Error:2675.8271484375 Time:9.074000269174576s Forward:8.848999603651464s Backward:0s
+6000 Accuracy:0.729166666666667 Error:2683.1474609375 Time:9.071999927982688s Forward:8.863998390734196s Backward:0s
+7000 Accuracy:0.729285714285714 Error:2674.421875 Time:9.058000054210424s Forward:8.795001078397036s Backward:0s
+8000 Accuracy:0.72975 Error:2677.162109375 Time:9.045000351034105s Forward:8.806001697666943s Backward:0s
+9000 Accuracy:0.731444444444444 Error:2660.23828125 Time:9.084000089205801s Forward:8.813002263195813s Backward:0s
+10000 Accuracy:0.7309 Error:2673.8203125 Time:9.040999668650329s Forward:8.77600098028779s Backward:0s
+Layer 0                            Max Output: 1.625 Min Output: -1.953125 TNNetInput 32,32,3
+ Times: 0s 0s
+debug weights end.....
+Layer 1 Neurons:32 Max Weight: 0.60093766450882 Min Weight: -0.756638646125793 Max Output: 5.86956310272217 Min Output: -6.83689117431641 TNNetConvolutionLinear 32,32,32
+ Times: 0s 0s
+ Parent:0
+Layer 2                            Max Output: 5.86956310272217 Min Output: -2.37141060829163 TNNetMaxPool 8,8,32
+ Times: 0s 0s
+ Parent:1
+Layer 3 Neurons:1 Max Weight: 0.7721146941185 Min Weight: -0.883341252803802 Max Output: 4.19272565841675 Min Output: -6.12075567245483 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:2
+Layer 4 Neurons:32 Max Weight: 0.698704540729523 Min Weight: -0.6801518201828 Max Output: 4.64076614379883 Min Output: 0 TNNetPointwiseConvReLU 8,8,32
+ Times: 0s 0s
+ Parent:3
+Layer 5 Neurons:1 Max Weight: 0.646364271640778 Min Weight: -0.738092005252838 Max Output: 4.57367563247681 Min Output: -5.29188108444214 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:4
+Layer 6 Neurons:64 Max Weight: 0.49970743060112 Min Weight: -0.550501704216003 Max Output: 4.03983402252197 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:5
+Layer 7 Neurons:1 Max Weight: 0.674006640911102 Min Weight: -0.701909899711609 Max Output: 5.39839649200439 Min Output: -4.65033721923828 TNNetDepthwiseConvLinear 8,8,64
+ Times: 0s 0s
+ Parent:6
+Layer 8 Neurons:64 Max Weight: 0.445383816957474 Min Weight: -0.477764546871185 Max Output: 2.19780158996582 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:7
+Layer 9                            Max Output: 2.19780158996582 Min Output: 0 TNNetDropout 8,8,64
+ Times: 0s 0s
+ Parent:8
+Layer 10                            Max Output: 2.19780158996582 Min Output: 0 TNNetMaxPool 4,4,64
+ Times: 0s 0s
+ Parent:9
+Layer 11 Neurons:10 Max Weight: 0.310597538948059 Min Weight: -0.283836781978607 Max Output: 4.30155897140503 Min Output: -4.15346479415894 TNNetFullConnectLinear 10,1,1
+ Times: 0s 0s
+ Parent:10
+Layer 12                            Max Output: 0.654531121253967 Min Output: 0.000139302894240245 TNNetSoftMax 10,1,1
+ Times: 0s 0s
+ Parent:11
+Ver: 4.7.6.10 (476). Workdir: C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin
+Test batch score:  Rate:0.7200, Loss:0.1735, ErrorSum:930.8571 
+Creating CNeural Network...
+Loading neural network from file: C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin\SimpleSeparableImageClassifier124_50_2.nn
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:32;5;2;1;0;0;0;0
+1)TNNetMaxPool:4;4;0;0;0;0;0;0
+2)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+3)TNNetPointwiseConvReLU:32;1;0;1;0;0;0;0
+4)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+5)TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+6)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+7)TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+8)TNNetDropout:2;1;0;0;0;0;0;0
+9)TNNetMaxPool:2;2;0;0;0;0;0;0
+10)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+11)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:32;5;2;1;0;0;0;0
+debug createLayer():TNNetMaxPool-addLayerAfter1...TNNetMaxPool:4;4;0;0;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter2...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter3...TNNetPointwiseConvReLU:32;1;0;1;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter4...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter5...TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter6...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter7...TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter8...TNNetDropout:2;1;0;0;0;0;0;0
+debug createLayer():TNNetMaxPool-addLayerAfter9...TNNetMaxPool:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter10...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter11...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug TNNet Loaded Data Layers:13  SCount:13
+Layer 0                            Max Output: 0 Min Output: 0 TNNetInput 32,32,3
+ Times: 0s 0s
+debug weights end.....
+Layer 1 Neurons:32 Max Weight: 0.60093766450882 Min Weight: -0.756638646125793 Max Output: 0 Min Output: 0 TNNetConvolutionLinear 32,32,32
+ Times: 0s 0s
+ Parent:0
+Layer 2                            Max Output: 0 Min Output: 0 TNNetMaxPool 8,8,32
+ Times: 0s 0s
+ Parent:1
+Layer 3 Neurons:1 Max Weight: 0.7721146941185 Min Weight: -0.883341252803802 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:2
+Layer 4 Neurons:32 Max Weight: 0.698704540729523 Min Weight: -0.6801518201828 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,32
+ Times: 0s 0s
+ Parent:3
+Layer 5 Neurons:1 Max Weight: 0.646364271640778 Min Weight: -0.738092005252838 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:4
+Layer 6 Neurons:64 Max Weight: 0.49970743060112 Min Weight: -0.550501704216003 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:5
+Layer 7 Neurons:1 Max Weight: 0.674006640911102 Min Weight: -0.701909899711609 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,64
+ Times: 0s 0s
+ Parent:6
+Layer 8 Neurons:64 Max Weight: 0.445383816957474 Min Weight: -0.477764546871185 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:7
+Layer 9                            Max Output: 0 Min Output: 0 TNNetDropout 8,8,64
+ Times: 0s 0s
+ Parent:8
+Layer 10                            Max Output: 0 Min Output: 0 TNNetMaxPool 4,4,64
+ Times: 0s 0s
+ Parent:9
+Layer 11 Neurons:10 Max Weight: 0.310597538948059 Min Weight: -0.283836781978607 Max Output: 0 Min Output: 0 TNNetFullConnectLinear 10,1,1
+ Times: 0s 0s
+ Parent:10
+Layer 12                            Max Output: 0 Min Output: 0 TNNetSoftMax 10,1,1
+ Times: 0s 0s
+ Parent:11
+Neural CNN network has: 
+ Layers: 13
+ Neurons: 205
+ Weights: 20960
+Computing...
+Loading 10K images from file "data_batch_5.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+ Totalsize: 30720000
+1000 Accuracy:0.726 Error:2674.811279296875 Time:10.080999811179936s Forward:8.845000807195902s Backward:0s
+2000 Accuracy:0.732 Error:2667.537841796875 Time:9.06799987424165s Forward:8.816002146340907s Backward:0s
+3000 Accuracy:0.729 Error:2675.17138671875 Time:9.066999703645706s Forward:8.842001552693546s Backward:0s
+4000 Accuracy:0.73075 Error:2681.8466796875 Time:9.059999766759574s Forward:8.799996273592114s Backward:0s
+5000 Accuracy:0.7274 Error:2673.251953125 Time:9.047999605536461s Forward:8.786001428961754s Backward:0s
+6000 Accuracy:0.728166666666667 Error:2677.7021484375 Time:9.057000512257218s Forward:8.803998213261366s Backward:0s
+7000 Accuracy:0.730571428571429 Error:2661.5732421875 Time:9.146999521180987s Forward:8.938998612575233s Backward:0s
+8000 Accuracy:0.731375 Error:2667.662109375 Time:9.100000304169953s Forward:8.804000727832317s Backward:0s
+9000 Accuracy:0.731 Error:2682.12109375 Time:9.055999713018537s Forward:8.886999171227217s Backward:0s
+10000 Accuracy:0.7327 Error:2660.546875 Time:9.0660001616925s Forward:8.793001365847886s Backward:0s
+Layer 0                            Max Output: 1.96875 Min Output: -1.921875 TNNetInput 32,32,3
+ Times: 0s 0s
+debug weights end.....
+Layer 1 Neurons:32 Max Weight: 0.60093766450882 Min Weight: -0.756638646125793 Max Output: 10.9232883453369 Min Output: -13.2465438842773 TNNetConvolutionLinear 32,32,32
+ Times: 0s 0s
+ Parent:0
+Layer 2                            Max Output: 10.9232883453369 Min Output: -2.15971517562866 TNNetMaxPool 8,8,32
+ Times: 0s 0s
+ Parent:1
+Layer 3 Neurons:1 Max Weight: 0.7721146941185 Min Weight: -0.883341252803802 Max Output: 8.58242416381836 Min Output: -7.91631650924683 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:2
+Layer 4 Neurons:32 Max Weight: 0.698704540729523 Min Weight: -0.6801518201828 Max Output: 9.1368293762207 Min Output: 0 TNNetPointwiseConvReLU 8,8,32
+ Times: 0s 0s
+ Parent:3
+Layer 5 Neurons:1 Max Weight: 0.646364271640778 Min Weight: -0.738092005252838 Max Output: 7.99833965301514 Min Output: -7.44258165359497 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:4
+Layer 6 Neurons:64 Max Weight: 0.49970743060112 Min Weight: -0.550501704216003 Max Output: 6.41025924682617 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:5
+Layer 7 Neurons:1 Max Weight: 0.674006640911102 Min Weight: -0.701909899711609 Max Output: 8.19005012512207 Min Output: -9.60412120819092 TNNetDepthwiseConvLinear 8,8,64
+ Times: 0s 0s
+ Parent:6
+Layer 8 Neurons:64 Max Weight: 0.445383816957474 Min Weight: -0.477764546871185 Max Output: 4.2626748085022 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:7
+Layer 9                            Max Output: 4.2626748085022 Min Output: 0 TNNetDropout 8,8,64
+ Times: 0s 0s
+ Parent:8
+Layer 10                            Max Output: 4.2626748085022 Min Output: 0 TNNetMaxPool 4,4,64
+ Times: 0s 0s
+ Parent:9
+Layer 11 Neurons:10 Max Weight: 0.310597538948059 Min Weight: -0.283836781978607 Max Output: 7.02874946594238 Min Output: -6.29694318771362 TNNetFullConnectLinear 10,1,1
+ Times: 0s 0s
+ Parent:10
+Layer 12                            Max Output: 0.781934976577759 Min Output: 1.27613213862787E-6 TNNetSoftMax 10,1,1
+ Times: 0s 0s
+ Parent:11
+Ver: 4.7.6.10 (476). Workdir: C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin
+Test batch score:  Rate:0.7300, Loss:0.1381, ErrorSum:899.7983 
+Creating CNeural Network...
+Loading neural network from file: C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin\SimpleSeparableImageClassifier124_50_2.nn
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:32;5;2;1;0;0;0;0
+1)TNNetMaxPool:4;4;0;0;0;0;0;0
+2)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+3)TNNetPointwiseConvReLU:32;1;0;1;0;0;0;0
+4)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+5)TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+6)TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+7)TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+8)TNNetDropout:2;1;0;0;0;0;0;0
+9)TNNetMaxPool:2;2;0;0;0;0;0;0
+10)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+11)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:32;5;2;1;0;0;0;0
+debug createLayer():TNNetMaxPool-addLayerAfter1...TNNetMaxPool:4;4;0;0;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter2...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter3...TNNetPointwiseConvReLU:32;1;0;1;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter4...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter5...TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+debug createLayer():TNNetDepthwiseConvLinear-addLayerAfter6...TNNetDepthwiseConvLinear:1;3;1;1;0;0;0;0
+debug createLayer():TNNetPointwiseConvReLU-addLayerAfter7...TNNetPointwiseConvReLU:64;1;0;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter8...TNNetDropout:2;1;0;0;0;0;0;0
+debug createLayer():TNNetMaxPool-addLayerAfter9...TNNetMaxPool:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter10...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter11...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug TNNet Loaded Data Layers:13  SCount:13
+Layer 0                            Max Output: 0 Min Output: 0 TNNetInput 32,32,3
+ Times: 0s 0s
+debug weights end.....
+Layer 1 Neurons:32 Max Weight: 0.60093766450882 Min Weight: -0.756638646125793 Max Output: 0 Min Output: 0 TNNetConvolutionLinear 32,32,32
+ Times: 0s 0s
+ Parent:0
+Layer 2                            Max Output: 0 Min Output: 0 TNNetMaxPool 8,8,32
+ Times: 0s 0s
+ Parent:1
+Layer 3 Neurons:1 Max Weight: 0.7721146941185 Min Weight: -0.883341252803802 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:2
+Layer 4 Neurons:32 Max Weight: 0.698704540729523 Min Weight: -0.6801518201828 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,32
+ Times: 0s 0s
+ Parent:3
+Layer 5 Neurons:1 Max Weight: 0.646364271640778 Min Weight: -0.738092005252838 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:4
+Layer 6 Neurons:64 Max Weight: 0.49970743060112 Min Weight: -0.550501704216003 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:5
+Layer 7 Neurons:1 Max Weight: 0.674006640911102 Min Weight: -0.701909899711609 Max Output: 0 Min Output: 0 TNNetDepthwiseConvLinear 8,8,64
+ Times: 0s 0s
+ Parent:6
+Layer 8 Neurons:64 Max Weight: 0.445383816957474 Min Weight: -0.477764546871185 Max Output: 0 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0s 0s
+ Parent:7
+Layer 9                            Max Output: 0 Min Output: 0 TNNetDropout 8,8,64
+ Times: 0s 0s
+ Parent:8
+Layer 10                            Max Output: 0 Min Output: 0 TNNetMaxPool 4,4,64
+ Times: 0s 0s
+ Parent:9
+Layer 11 Neurons:10 Max Weight: 0.310597538948059 Min Weight: -0.283836781978607 Max Output: 0 Min Output: 0 TNNetFullConnectLinear 10,1,1
+ Times: 0s 0s
+ Parent:10
+Layer 12                            Max Output: 0 Min Output: 0 TNNetSoftMax 10,1,1
+ Times: 0s 0s
+ Parent:11
+Neural CNN network has: 
+ Layers: 13
+ Neurons: 205
+ Weights: 20960
+Computing...
+Loading 10K images from file "data_batch_5.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+ Totalsize: 30720000
+1000 Accuracy:0.72 Error:2684.932861328125 Time:9.73600004799664s Forward:8.784002345055342s Backward:0s
+2000 Accuracy:0.725 Error:2673.042724609375 Time:9.064999991096556s Forward:8.728999248705804s Backward:0s
+3000 Accuracy:0.721333333333333 Error:2692.04345703125 Time:9.070999757386744s Forward:8.82800230756402s Backward:0s
+4000 Accuracy:0.7255 Error:2665.85107421875 Time:9.055999713018537s Forward:8.807998895645142s Backward:0s
+5000 Accuracy:0.7246 Error:2679.162109375 Time:9.062000107951462s Forward:8.807001868262887s Backward:0s
+Layer 0                            Max Output: 0.703125 Min Output: -2 TNNetInput 32,32,3
+ Times: 0s 0s
+debug weights end.....
+Layer 1 Neurons:32 Max Weight: 0.60093766450882 Min Weight: -0.756638646125793 Max Output: 10.5805320739746 Min Output: -8.68067169189453 TNNetConvolutionLinear 32,32,32
+ Times: 1.66300018317997s 0s
+ Parent:0
+Layer 2                            Max Output: 10.5805320739746 Min Output: -3.60570526123047 TNNetMaxPool 8,8,32
+ Times: 0.0209998106583953s 0s
+ Parent:1
+Layer 3 Neurons:1 Max Weight: 0.7721146941185 Min Weight: -0.883341252803802 Max Output: 5.29958200454712 Min Output: -8.1445484161377 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:2
+Layer 4 Neurons:32 Max Weight: 0.698704540729523 Min Weight: -0.6801518201828 Max Output: 5.6913890838623 Min Output: 0 TNNetPointwiseConvReLU 8,8,32
+ Times: 0.0419989926740527s 0s
+ Parent:3
+Layer 5 Neurons:1 Max Weight: 0.646364271640778 Min Weight: -0.738092005252838 Max Output: 5.75776100158691 Min Output: -5.93785667419434 TNNetDepthwiseConvLinear 8,8,32
+ Times: 0s 0s
+ Parent:4
+Layer 6 Neurons:64 Max Weight: 0.49970743060112 Min Weight: -0.550501704216003 Max Output: 4.2361536026001 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0.079000904224813s 0s
+ Parent:5
+Layer 7 Neurons:1 Max Weight: 0.674006640911102 Min Weight: -0.701909899711609 Max Output: 5.75470447540283 Min Output: -5.30450057983398 TNNetDepthwiseConvLinear 8,8,64
+ Times: 0.00199971254914999s 0s
+ Parent:6
+Layer 8 Neurons:64 Max Weight: 0.445383816957474 Min Weight: -0.477764546871185 Max Output: 2.74893164634705 Min Output: 0 TNNetPointwiseConvReLU 8,8,64
+ Times: 0.204999139532447s 0s
+ Parent:7
+Layer 9                            Max Output: 2.74893164634705 Min Output: 0 TNNetDropout 8,8,64
+ Times: 0.0160002149641514s 0s
+ Parent:8
+Layer 10                            Max Output: 2.74893164634705 Min Output: 0 TNNetMaxPool 4,4,64
+ Times: 0s 0s
+ Parent:9
+Layer 11 Neurons:10 Max Weight: 0.310597538948059 Min Weight: -0.283836781978607 Max Output: 2.02615475654602 Min Output: -2.55565404891968 TNNetFullConnectLinear 10,1,1
+ Times: 0.0240003224462271s 0s
+ Parent:10
+Layer 12                            Max Output: 0.298418194055557 Min Output: 0.00305471639148891 TNNetSoftMax 10,1,1
+ Times: 0s 0s
+ Parent:11
+Ver: 4.7.6.10 (476). Workdir: C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin
+Test batch score:  Rate:0.7330, Loss:0.1407, ErrorSum:923.0961 
+closed & free action...
+Ver: 4.7.6.10 (476). Workdir: C:\maXbox\EKON_BASTA\EKON24\cifar-10-batches-bin
+Switch: next compile output will result in window
+Switch: next compile output will result in window
