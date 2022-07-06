@@ -174,4 +174,11 @@ Epochs: 50. Working time: 4.87 hours.
 CAI maXbox Neural Fit Finished.
 terminate__
  mX4 executed: 04/07/2022 13:41:47  Runtime: 4:52:13.545  Memload: 42% use
+Starting Testing.
+Epochs: 50 Examples seen:2000000 Test Accuracy: 0.7386 Test Error: 0.7142 Test Loss: 0.7534 Total time: 595.02min
+Epoch time: 7.5000 minutes. 50 epochs: 6.3000 hours.
+Epochs: 50. Working time: 9.92 hours.
+CAI maXbox Neural Fit Finished.
+terminate__
+ mX4 executed: 06/07/2022 18:58:08  Runtime: 9:55:6.882  Memload: 48% use
 
