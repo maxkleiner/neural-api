@@ -16,7 +16,7 @@ uses {$IFDEF UNIX} {$IFDEF UseCThreads}
 
   *)
   
-program SeparableConvolution_mX4_50;
+Program SeparableConvolution_mX4_50;
 (*
  Coded by Joao Paulo Schwarz Schuler.
  https://github.com/joaopauloschuler/neural-api
@@ -47,16 +47,16 @@ type
     end;
 
     WriteLn('Creating SeparableConvolution Neural Network...');
-    NN := TNNet.Create();
+    NN:= TNNet.Create();
     NN.AddLayer2([
       TNNetInput.Create4(32, 32, 3),
-      TNNetConvolutionLinear.Create({NumFeatures=}16 {64}, {featureSize=}5, 
+      TNNetConvolutionLinear.Create({NumFeatures=}32 {64}, {featureSize=}5, 
                   {padding=}2, {stride=}1, {SuppressBias=}0).InitBasicPatterns(),
       TNNetMaxPool.Create44(4,0,0)
     ]);
     NN.AddSeparableConvReLU({NumFeatures=}32,{featureSize=}3,{padding=}1,{stride=}1,{DepthMultiplier=}1,{SuppressBias=}0, {pAfterLayer}0);
-    NN.AddSeparableConvReLU({NumFeatures=}32,{featureSize=}3,{padding=}1,{stride=}1,{DepthMultiplier=}1,{SuppressBias=}0,0);
-   // NN.AddSeparableConvReLU({NumFeatures=}64,{featureSize=}3,{padding=}1,{stride=}1,{DepthMultiplier=}1,{SuppressBias=}0,0);
+    NN.AddSeparableConvReLU({NumFeatures=}64,{featureSize=}3,{padding=}1,{stride=}1,{DepthMultiplier=}1,{SuppressBias=}0,0);
+    NN.AddSeparableConvReLU({NumFeatures=}64,{featureSize=}3,{padding=}1,{stride=}1,{DepthMultiplier=}1,{SuppressBias=}0,0);
   //  NN.AddSeparableConvReLU({NumFeatures=}64,{featureSize=}3,{padding=}1,{stride=}1,{DepthMultiplier=}1,{SuppressBias=}0,0);
     NN.AddLayer2([
       TNNetDropout.Create12(0.5,1),
@@ -73,14 +73,14 @@ type
     CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes,
                                           csEncodeRGB);
 
-    NeuralFit := TNeuralImageFit.Create;
-    NeuralFit.FileNameBase := 'SimpleSeparableImageClassifier124';
-    NeuralFit.InitialLearningRate := 0.001;  //0.001
-    NeuralFit.LearningRateDecay := 0.1 //0.01;
-    NeuralFit.StaircaseEpochs := 10;
-    NeuralFit.Inertia := 0.9;
-    NeuralFit.L2Decay := 0.0001;  //0.00001;
-    NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}128, {epochs=}40  {50});
+    NeuralFit:= TNeuralImageFit.Create;
+    NeuralFit.FileNameBase:= 'SimpleSeparableImageClassifier124_50_2';
+    NeuralFit.InitialLearningRate:= 0.001;  //0.001
+    NeuralFit.LearningRateDecay:= 0.1 //0.01;
+    NeuralFit.StaircaseEpochs:= 10;
+    NeuralFit.Inertia:= 0.9;
+    NeuralFit.L2Decay:= 0.0001;  //0.00001;
+    NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}128, {epochs=}50  {50});
     NeuralFit.Free;
 
     NN.Free;
@@ -94,7 +94,7 @@ type
 var
   Application2: TTestCNNAlgo;
 begin //@main
-  Application2 := TTestCNNAlgo.Create(nil);
+  Application2:= TTestCNNAlgo.Create(nil);
   Application2.Title:='CIFAR-10 Separable Convolutions Example';
   //Application2.Run;
   TTestCNNAlgoDoRun;
@@ -153,4 +153,25 @@ Epochs: 40. Working time: 3.65 hours.
 CAI maXbox Neural Fit Finished.
 terminate__
  mX4 executed: 29/06/2022 12:01:53  Runtime: 3:38:48.990  Memload: 39% use
+ Epochs: 10 Examples seen:400000 Test Accuracy: 0.6501 Test Error: 0.9951 Test Loss: 1.0275 Total time: 58.88min
+Epoch time: 3.9000 minutes. 10 epochs: 0.6400 hours.
+Epochs: 10. Working time: 0.98 hours.
+CAI maXbox Neural Fit Finished.
+terminate__
+Epochs: 40 Examples seen:1600000 Test Accuracy: 0.7179 Test Error: 0.7849 Test Loss: 0.8227 Total time: 230.74min
+Epoch time: 3.3000 minutes. 40 epochs: 2.2000 hours.
+Epochs: 40. Working time: 3.85 hours.
+CAI maXbox Neural Fit Finished.
+terminate__
+ mX4 executed: 01/07/2022 16:18:58  Runtime: 3:50:50.323  Memload: 40% use
+ 
+Epochs: 50 Examples seen:2000000 Validation Accuracy: 0.7278 Validation Error: 0.7695 Validation Loss: 0.8065 Total time: 289.95min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Starting Testing.
+Epochs: 50 Examples seen:2000000 Test Accuracy: 0.7242 Test Error: 0.7753 Test Loss: 0.8144 Total time: 292.09min
+Epoch time: 3.2000 minutes. 50 epochs: 2.7000 hours.
+Epochs: 50. Working time: 4.87 hours.
+CAI maXbox Neural Fit Finished.
+terminate__
+ mX4 executed: 04/07/2022 13:41:47  Runtime: 4:52:13.545  Memload: 42% use
 
