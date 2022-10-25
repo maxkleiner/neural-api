@@ -1,6 +1,12 @@
 # Artificial Art Example
 <img src="https://github.com/joaopauloschuler/neural-api/blob/master/docs/art2.jpg" height="400"></img>
 
+# out of maXbox4
+![1159_VGAN_atwork_pretrained93_3](https://user-images.githubusercontent.com/3393121/197821392-06b14299-009c-4a45-9518-ba1c27a51730.png)
+
+![1159_VGAN_atwork_pretrained93_4](https://user-images.githubusercontent.com/3393121/197821446-2cd5113c-bbba-42d3-afb3-d025002cb9c6.png)
+
+
 In this example, 2 neural networks will enter an arms race via a [Generative Adversarial Neural Network](https://en.wikipedia.org/wiki/Generative_adversarial_network): `FGenerative` and `FDiscriminator`. The Generative network will learn how to create images while the discriminator will compare these images against the CIFAR-10 dataset.
 
 ## The Source Code
