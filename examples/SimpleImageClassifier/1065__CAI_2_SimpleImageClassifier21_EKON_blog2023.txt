@@ -1,0 +1,1469 @@
+//program CAI_NEURAL_API_Exec_47610_SimpleImageClassifier3_EKONBlog;
+{mail to office@blaisepascal.eu and michael@freepascal.org }
+
+{
+Proposal for Integration CAI in Lazarus
+-----------------------------------------------
+
+1. We had to build a lpi-package with the CAI units.
+   Depends on !lazbuild mtprocs/multithreadprocslaz.lpk
+2. produce of a user guide from the simple image classifier Cifar10.
+   My idea is to lower the initial hurdle (time for a model training is about days) so I propose an example with a pre-trained model that comes from the classification of image objects.
+   
+   https://github.com/maxkleiner/neural-api/blob/master/examples/SimpleImageClassifier/EKON25_SimpleImageClassifier-60.nn
+   
+   and the result will be:
+   https://github.com/maxkleiner/neural-api/blob/master/examples/SimpleImageClassifier/1183_visualcifar10_nnet_lazarus_maxbox.png
+   
+3. Demo project of SimpleImageClassifier.lpr  
+
+4. Develop a wizard to generate a classifier model:
+   - Data input and dimension
+   - classifier algo
+   - layer architecture and shapes
+   - train and test split
+   - hyperparameters grid 
+   So the wizard is an ongoing process to optimize the loss function
+   
+5. Make a showcase in BPM with a Data Science solution like
+
+https://blogs.embarcadero.com/why-a-data-scientist-chooses-delphi-for-powerful-real-world-visualizations/
+https://colab.research.google.com/drive/16SBtXfsv99YLDtoVHOwq6KGenhKkmRfL#scrollTo=X5bpFXiaC_PY
+
+Summary of Support Package:
+1. Package         - lpi
+2. User Guide      - pdf
+3. Demo Project    - lpr /ipynb
+4. Wizard          - TWizardFrame
+5. Showcase        - html     
+
+}
+
+
+program CAI_NEURAL_API_Exec_47610_SimpleImageClassifier3_EKONBlog;
+
+//https://github.com/maxkleiner/neural-api/tree/master/examples/SimpleImageClassifier
+//https://www.youtube.com/watch?v=-e1_QhJ1EhQ
+//https://forum.lazarus.freepascal.org/index.php?topic=32620.0
+//http://crosskylix.untergrund.net/#newsletter
+
+{https://entwickler-konferenz.de/blog/machine-learning-mit-cai/}
+//http://www.softwareschule.ch/examples/uPSI_NeuralNetworkCAI.txt
+//http://www.softwareschule.ch/examples/uPSI_Neuralvolume.txt
+//https://github.com/joaopauloschuler/neural-api/blob/master/examples/SimpleImageClassifier/SimpleImageClassifier.lpr
+{fix done: not complete cause the neuralfil() has a writeln which troubles I/O 105 exception}
+//https://ibrt.ch/delphi/neuralnets.html
+//https://colab.research.google.com/drive/1kGIdF-KKh-ZFkVEjM5O-Ju3ln6nfiwkC
+
+
+function CreateHypotenusePairList(MaxCnt: integer): TNNetVolumePairList;
+  var
+    Cnt: integer;
+    LocalX, LocalY, Hypotenuse: TNeuralFloat;
+  begin
+    Result := TNNetVolumePairList.Create(true);
+    for Cnt := 1 to MaxCnt do
+    begin
+      LocalX := Random(100);
+      LocalY := Random(100);
+      Hypotenuse := sqrt(LocalX*LocalX + LocalY*LocalY);
+
+      Result.items[0]:= TNNetVolumePair.Create82(
+          TNNetVolume.Create1([LocalX, LocalY]),
+          TNNetVolume.Create1([Hypotenuse])
+        );
+      Result.Add(
+        TNNetVolumePair.Create82(
+          TNNetVolume.Create1([LocalX, LocalY]),
+          TNNetVolume.Create1([Hypotenuse])
+        )
+      ); //}
+    end;
+  end;
+  
+  procedure TTestCNNAlgoDoRun;
+  var
+    NN: TNNet;
+    NeuralFit: TNeuralImageFit;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+  begin
+    if not CheckCIFARFile() then
+    begin
+      //Terminate;
+      exit;
+    end;
+    WriteLn('Creating CNeural Network...');
+    //TNNetConvolutionBase.Create36({Features=}64, {FeatureSize=}5, 
+      //                    {Padding=}2, {Stride=}1, {SuppressBias=}1);
+    NN := TNNet.Create();
+    //NN.verbose:= true;
+    NN.AddLayer49([
+      TNNetInput.Create4(32, 32, 3),
+      TNNetConvolutionLinear.Create({Features=}64, {FeatureSize=}5, 
+             {Padding=}2, {Stride=}1, {SuppressBias=}0),
+      //TNNetConvolutionReLU.Create({Features=}64, 
+        //            {FeatureSize=}5, {Padding=}2, {Stride=}1, {SuppressBias=}1),
+      TNNetMaxPool.Create44(4,0,0),
+      TNNetMovingStdNormalization.Create(),
+      TNNetConvolutionReLU.Create({Features=}64, 
+      {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0),
+      TNNetConvolutionReLU.Create({Features=}64, 
+      {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0),
+      TNNetConvolutionReLU.Create({Features=}64, 
+      {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0),
+      TNNetConvolutionReLU.Create({Features=}64, 
+      {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0),
+      TNNetDropout.Create12(0.5,1),
+      TNNetMaxPool.Create44(2,0,0),
+      TNNetFullConnectLinear.Create28(10,0),
+      TNNetSoftMax.Create()
+    ]);     //*)
+    NN.DebugStructure();
+    CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                                                ImgTestVolumes,csEncodeRGB);
+
+    //TestBatch;
+    NeuralFit := TNeuralImageFit.Create;
+    try
+      NeuralFit.FileNameBase := 'EKON26_SimpleImageClassifier-'+IntToStr(GetProcessId());
+      neuralfit.verbose:= true;
+      NeuralFit.InitialLearningRate := 0.001;
+      NeuralFit.LearningRateDecay := 0.01;
+      NeuralFit.StaircaseEpochs := 10;
+      NeuralFit.Inertia := 0.9;
+      NeuralFit.L2Decay := 0.00001;
+      NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}64, {epochs=}50);
+    
+    finally
+       NeuralFit.Free;    //*)
+   
+       NN.Free;
+       ImgTestVolumes.Free;
+       ImgValidationVolumes.Free;
+       ImgTrainingVolumes.Free;
+       //Terminate;
+     end;  
+  end;
+  
+  procedure TTestCNNAlgoDoRun2;
+  var NN: TNNet;
+    NeuralFit: TNeuralImageFit;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+  begin
+    if not CheckCIFARFile() then
+    begin
+      //Terminate;
+      exit;
+    end;
+    WriteLn('Creating CNeural Network...');
+    //TNNetConvolutionBase.Create36({Features=}64, {FeatureSize=}5, 
+      //                    {Padding=}2, {Stride=}1, {SuppressBias=}1);
+    NN:= TNNet.Create();
+    //NN.verbose:= true;
+    NN.AddLayer( TNNetInput.Create4(32, 32, 3))
+    
+      NN.AddLayer( TNNetConvolutionLinear.Create({Features=}64, {FeatureSize=}5, 
+             {Padding=}2, {Stride=}1, {SuppressBias=}0));
+      //TNNetConvolutionReLU.Create({Features=}64, 
+        //            {FeatureSize=}5, {Padding=}2, {Stride=}1, {SuppressBias=}1),
+      NN.AddLayer( TNNetMaxPool.Create44(4,0,0));
+      NN.AddLayer( TNNetMovingStdNormalization.Create())
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+     // NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+     // NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetDropout.Create12(0.5,1));
+      NN.AddLayer( TNNetMaxPool.Create44(2,0,0));
+      NN.AddLayer( TNNetFullConnectLinear.Create28(10,0));
+      NN.AddLayer( TNNetSoftMax.Create());
+    //]);     //*)
+    NN.DebugStructure();
+    ImgTrainingVolumes.ResizeImage(16, 16);   //48 test with 16
+    ImgValidationVolumes.ResizeImage(16, 16);
+    ImgTestVolumes.ResizeImage(16, 16);
+    CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                                                ImgTestVolumes,csEncodeRGB);
+
+    //TestBatch;
+    writeln('layers count '+itoa(nn.layers.count));
+    NeuralFit := TNeuralImageFit.Create;
+    try
+      NeuralFit.FileNameBase:= 'EKON26_SimpleImageClassifier-'+IntToStr(GetProcessId());
+      neuralfit.verbose:= true;
+      NeuralFit.InitialLearningRate := 0.001;
+      NeuralFit.LearningRateDecay := 0.01;
+      NeuralFit.StaircaseEpochs := 2;   //10
+      NeuralFit.Inertia := 0.9;
+      NeuralFit.L2Decay := 0.00001;     //0.00001
+      //Neuralfit.RunTrainingBatch(TestSize: integer);
+      writeln(botostr(Neuralfit.hasresizing));
+      //writeln(botostr(Neuralfit.count));
+      writeln('totalsize '+itoa(ImgTrainingVolumes.gettotalsize ))
+       writeln('coint '+itoa(ImgTrainingVolumes.count ))
+       NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}64, {epochs=}70);
+    
+    finally
+       NeuralFit.Free;    //*)
+       NN.Free;
+       ImgTestVolumes.Free;
+       ImgValidationVolumes.Free;
+       ImgTrainingVolumes.Free;
+       //Terminate;
+     end;  
+  end;
+  
+  procedure createsimpleNN;
+  var NumClasses: byte;  NN: TNNet;
+      InputVolume, PredictedVolume, vDesiredVolume: TNNetVolume;
+  //Example - How to Create Your Network
+  begin
+   NumClasses := 10;
+   NN := TNNet.Create();
+   InputVolume:=  TNNetVolume.create;
+   //inputvolume.resize
+   NN.AddLayer( TNNetInput.Create4(32,32,3) );
+   NN.AddLayer( TNNetConvolutionReLU.Create( 16,5,0,0,1) );
+   NN.AddLayer( TNNetMaxPool.Create44(2,0,0) );
+   NN.AddLayer( TNNetConvolutionReLU.Create(128,5,0,0,1) );
+   NN.AddLayer( TNNetMaxPool.Create44(2,0,0) );
+   NN.AddLayer( TNNetConvolutionReLU.Create(128,5,0,0,1) );
+   NN.AddLayer( TNNetFullConnectReLU.Create30(64,0) );
+   NN.AddLayer( TNNetFullConnect.Create27(NumClasses, 0) );
+   NN.SetLearningRate(0.01,0.8);
+   //Example - How to Train Your Network
+   // InputVolume and vDesiredVolume are of the type TNNetVolume
+   NN.Compute65(InputVolume, 0);
+   //NN.GetOutput(PredictedVolume);
+   //vDesiredVolume.SetClassForReLU(DesiredClass);
+   //NN.Backpropagate69(vDesiredVolume);
+   InputVolume.Free;
+   writeln('InputVolume.Free;')
+   writeln(flots(PI));
+   NN.free;
+  end; 
+  
+  //https://entwickler-konferenz.de/blog/machine-learning-mit-cai/
+  
+//type TNNetLayerFullConnectReLU = class(TNNetFullConnectReLU);  
+
+procedure TTestCifar10Algo;
+var NN: TNNet;
+   NeuralFit: TNeuralImageFit;
+   ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+   NumClasses: integer;
+   fLearningRate, fInertia: single;
+   
+   begin
+    //This is how a sequential CNN array of layers is added:
+   
+    NN:= TNNet.Create();
+    NumClasses:= 10;
+    fLearningRate:= 0.001;
+    fInertia:= 0.9;
+   
+    NN.AddLayer(TNNetInput.Create4(32, 32, 3)); //32x32x3 Input Image
+    NN.AddLayer(TNNetConvolutionReLU.Create({Features=}16, 
+                  {FeatureSize=}5, {Padding=}0, {Stride=}1, {SuppressBias=}0));
+    NN.AddLayer(TNNetMaxPool.Create44({Size=}2,0,0));
+    NN.AddLayer(TNNetConvolutionReLU.Create(32, 5, 0, {Stride=}1, 0));
+    NN.AddLayer(TNNetMaxPool.Create44({Size=}2,0,0));
+    NN.AddLayer(TNNetConvolutionReLU.Create(32, 5, 0, {Stride=}1, 0));
+    NN.AddLayer(TNNetFullConnectReLU.Create({Neurons=}32,1,1,0));
+    NN.AddLayer(TNNetFullConnectLinear.Create28(NumClasses,0));
+    NN.AddLayer(TNNetSoftMax.Create());
+    //writeln(NN.SaveDataToString);
+    NN.SaveDataToString;
+    //ClassifyImage(pNN: TNNet; pImgInput, pOutput: TNNetVolume);
+    //readln;
+    NN.Free;
+  end;  
+  
+//https://github.com/joaopauloschuler/neural-api/blob/master/examples/SimpleImageClassifier/SimpleImageClassifier.lpr 
+ 
+ //program SimpleImageClassifier;
+ 
+ procedure TTestCNNAlgoDoRun2EKON24Blog;
+  var NN: TNNet;
+    NeuralFit: TNeuralImageFit;
+    inp, outp: TNnetVolume;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+  begin
+    if not CheckCIFARFile() then begin
+      //Terminate;
+      exit;
+    end;
+    WriteLn('Creating CNeural Network...');
+    //TNNetConvolutionBase.Create36({Features=}64, {FeatureSize=}5, 
+      //                    {Padding=}2, {Stride=}1, {SuppressBias=}1);
+    NN:= TNNet.Create();
+    //NN.verbose:= true;
+    NN.AddLayer( TNNetInput.Create4(32, 32, 3))
+    
+      NN.AddLayer( TNNetConvolutionLinear.Create({Features=}64, {FeatureSize=}5, 
+             {Padding=}2, {Stride=}1, {SuppressBias=}0));
+      //TNNetConvolutionReLU.Create({Features=}64, 
+        //            {FeatureSize=}5, {Padding=}2, {Stride=}1, {SuppressBias=}1),
+      NN.AddLayer( TNNetMaxPool.Create44(4,0,0));
+      NN.AddLayer( TNNetMovingStdNormalization.Create())
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      //NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+     // NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+     // NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetDropout.Create12(0.5,0));
+      NN.AddLayer( TNNetMaxPool.Create44(2,0,0));
+      NN.AddLayer( TNNetFullConnectLinear.Create28(10,0));
+      NN.AddLayer( TNNetSoftMax.Create());
+    //]);     //*)
+    NN.DebugStructure();
+    CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                                                ImgTestVolumes,csEncodeRGB);
+
+  { ImgTrainingVolumes.ResizeImage(16, 16);   //48 test with 16
+    ImgValidationVolumes.ResizeImage(16, 16);
+    ImgTestVolumes.ResizeImage(16, 16);    }
+    
+    //TestBatch;
+    writeln('layers count '+itoa(nn.layers.count));
+    NeuralFit := TNeuralImageFit.Create;
+    try
+      NeuralFit.FileNameBase:='SimpleImageClassifierEKON26-'+IntToStr(GetProcessId());
+      neuralfit.verbose:= True;
+      NeuralFit.InitialLearningRate:= 0.001;
+      NeuralFit.LearningRateDecay:= 0.01;
+      NeuralFit.StaircaseEpochs:= 3;   //10
+      NeuralFit.Inertia:= 0.9;
+      NeuralFit.L2Decay:= 0.00001;     //0.00001
+      //Neuralfit.RunTrainingBatch(TestSize: integer);
+      writeln(botostr(Neuralfit.hasresizing));
+      //writeln(botostr(Neuralfit.count));
+      writeln('totalsize '+itoa(ImgTrainingVolumes.gettotalsize ))
+      writeln('coint '+itoa(ImgTrainingVolumes.count ))
+      NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, 
+                                 {NumClasses=}10, {batchsize=}96, {epochs=}60);
+       //ClassifyImage(pNN: TNNet; pImgInput, pOutput: TNNetVolume);
+       //neuralfit.ClassifyImage(NN, inp, outp)
+    
+    finally
+       NeuralFit.Free;    //*)
+       NN.Free;
+       ImgTestVolumes.Free;
+       ImgValidationVolumes.Free;
+       ImgTrainingVolumes.Free;
+       //Terminate;
+     end;  
+  end;
+  
+ procedure TTestCNNAlgoDoRun2EKON26Blog;
+  var NN: TNNet;
+    NeuralFit: TNeuralImageFit;
+    inp, outp: TNnetVolume;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+  begin
+    if not CheckCIFARFile() then begin
+      //Terminate;
+      exit;
+    end;
+    WriteLn('Creating CNeural Network...');
+    //TNNetConvolutionBase.Create36({Features=}64, {FeatureSize=}5, 
+      //                    {Padding=}2, {Stride=}1, {SuppressBias=}1);
+    NN:= TNNet.Create();
+    //NN.verbose:= true;
+    NN.AddLayer( TNNetInput.Create4(32, 32, 3))
+    
+      NN.AddLayer( TNNetConvolutionLinear.Create({Features=}64, {FeatureSize=}5, 
+             {Padding=}2, {Stride=}1, {SuppressBias=}1));
+      //TNNetConvolutionReLU.Create({Features=}64, 
+        //            {FeatureSize=}5, {Padding=}2, {Stride=}1, {SuppressBias=}1),
+      NN.AddLayer( TNNetMaxPool.Create44(4,0,0));
+      NN.AddLayer( TNNetMovingStdNormalization.Create())
+      NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}1));
+      //NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+     // NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+     // NN.AddLayer( TNNetConvolutionReLU.Create({Features=}64, {FeatureSize=}3, {Padding=}1, {Stride=}1, {SuppressBias=}0));
+      NN.AddLayer( TNNetDropout.Create12(0.5,0));
+      NN.AddLayer( TNNetMaxPool.Create44(2,0,0));
+      NN.AddLayer( TNNetFullConnectLinear.Create28(10,0));
+      NN.AddLayer( TNNetSoftMax.Create());
+    //]);     //*)
+    NN.DebugStructure();
+    CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, 
+                                                ImgTestVolumes,csEncodeRGB);
+
+  { ImgTrainingVolumes.ResizeImage(16, 16);   //48 test with 16
+    ImgValidationVolumes.ResizeImage(16, 16);
+    ImgTestVolumes.ResizeImage(16, 16);    }
+    
+    //TestBatch;
+    writeln('layers count '+itoa(nn.layers.count));
+    NeuralFit := TNeuralImageFit.Create;
+    try
+      NeuralFit.FileNameBase:='SimpleImageClassifierEKON26-'+IntToStr(GetProcessId());
+      neuralfit.verbose:= True;
+      NeuralFit.InitialLearningRate:= 0.001;
+      NeuralFit.LearningRateDecay:= 0.01;
+      NeuralFit.StaircaseEpochs:= 10;   //10
+      NeuralFit.Inertia:= 0.9;
+      NeuralFit.L2Decay:= 0.00001;     //0.00001
+      //Neuralfit.RunTrainingBatch(TestSize: integer);
+      writeln(botostr(Neuralfit.hasresizing));
+      //writeln(botostr(Neuralfit.count));
+      writeln('totalsize '+itoa(ImgTrainingVolumes.gettotalsize ))
+      writeln('coint '+itoa(ImgTrainingVolumes.count ))
+      NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, 
+                                 {NumClasses=}10, {batchsize=}64, {epochs=}60);
+       //ClassifyImage(pNN: TNNet; pImgInput, pOutput: TNNetVolume);
+       //neuralfit.ClassifyImage(NN, inp, outp)
+    
+    finally
+       NeuralFit.Free;    //*)
+       NN.Free;
+       ImgTestVolumes.Free;
+       ImgValidationVolumes.Free;
+       ImgTrainingVolumes.Free;
+       //Terminate;
+     end;  
+  end;
+ 
+ var f1,f2 : double; 
+    var A, B : TVectorClass;  ax: TExtendedArray; aint64, aint64_: TInt64ArrayClass;
+    NN : TNNet;   NumClasses: integer;
+    ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes: TNNetVolumeList;
+    NeuralFit : TNeuralImageFit;  fLearningRate: double;
+     TrainingPairs, ValidationPairs, TestPairs :TNNetVolumePairList;
+     ImgVolumes: TNNetVolumeList; 
+
+  //PythonEngine1.Free;
+  //myloadscript2:= filetostring(PYSCRIPT2);
+  
+begin   //@main
+ { 
+ with TPythonEngine.Create(Nil) do begin
+  pythonhome:= 'C:\Users\breitsch\AppData\Local\Programs\Python\Python37-32\';
+  try
+    loadDLL;
+    Println('Decimal: '+ 
+          EvalStr('__import__("decimal").Decimal(0.1)')); 
+  except
+    raiseError;        
+  finally       
+    free;
+  end; 
+ end;   }
+  
+ //procedure SIRegister_CurlHttpCodes(CL: TPSPascalCompiler);
+  writeln(itoa(HTTP_BAD_GATEWAY))
+  
+  with TNNet.create do begin
+      //createlayer('TNNetDropout') 
+      InitWeights(); 
+      AddLayer( TNNetInput.Create4(32, 32, 3))
+      AddLayer( TNNetConvolutionReLU.Create(64, 5,1, 1,0));
+      AddLayer( TNNetSoftMax.Create());
+      //GetRandomLayer
+      //AddLayer47(GetRandomLayer( )) 
+      //GetRandomLayer( );
+      DebugStructure();
+      writeln('GetBiasSum '+floattostr(GetBiasSum( )));                  
+    free
+  end;
+ 
+  // TTestCNNAlgoDoRun2;
+  
+  // TestConvolutionAPI();  
+ // TestBackProp(); //> 1.5 GByte MemoryTest
+  
+  //createsimpleNN ;
+  //TTestCifar10Algo();
+  TTestCNNAlgoDoRun2EKON26Blog;
+  
+   { TrainingPairs := CreateHypotenusePairList(10000);
+    ValidationPairs := CreateHypotenusePairList(1000);
+    TestPairs := CreateHypotenusePairList(1000);   }
+  
+End.
+
+Ref:
+Reftests;
+
+https://www.freepascal.org/~michael/articles/#regex
+
+epoch	training accuracy	training loss	training error	validation accuracy	validation loss	validation error	learning rate	time
+1	0.4508	1.4676	1.3359	0.5827	1.1893	1.0888	0.001	1691
+2	0.5306	1.3412	1.2021	0.5932	1.1574	1.0718	0.001	3442
+3	0.5735	1.0292	0.9873	0.6027	1.1275	1.0515	0.001	5183
+4	0.5857	1.1993	1.063	   0.6137	1.0912	1.0257	0.001	6864
+5	0.5964	0.9911	0.919	   0.6295	1.0483	0.9966	0.001	8540
+
+
+198400 Examples seen. Accuracy: 0.5961 Error: 1.03403 Loss: 1.09805 Threads: 1 Forward time: 5.78s Backward time: 0.40s Step time: 31.02s
+199680 Examples seen. Accuracy: 0.5961 Error: 1.09741 Loss: 1.30125 Threads: 1 Forward time: 5.92s Backward time: 0.26s Step time: 31.23s
+40000 of samples have been processed.
+Starting Validation.
+VALIDATION RECORD! Saving NN at SimpleImageClassifierEKON25-5000.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetMaxPool:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetMaxPool:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 5 Examples seen:200000 Validation Accuracy: 0.6295 Validation Error: 0.9966 Validation Loss: 1.0483 Total time: 142.34min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 16.0000 minutes. 5 epochs: 1.4000 hours.
+Epochs: 5. Working time: 2.37 hours.
+CAI maXbox Neural Fit Finished.
+ mX4 executed: 16/11/2021 11:14:08  Runtime: 2:22:26.354  Memload: 45% use
+
+Epochs: 1 Examples seen:40000 Validation Accuracy: 0.5913 Validation Error: 1.0938 Validation Loss: 1.1765 Total time: 28.11min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 16.0000 minutes. 1 epochs: 0.2700 hours.
+Epochs: 1. Working time: 0.47 hours.
+CAI maXbox Neural Fit Finished.
+
+(* 
+  NN := TNNet.Create();
+  NumClasses:= 2;
+  fLearningRate:= 0.009;
+  
+  NN.AddLayer49([
+  TNNetInput.Create4(32, 32, 3), //32x32x3 Input Image
+  TNNetConvolutionReLU.Create({Features=}16, 
+                    {FeatureSize=}5, {Padding=}0, {Stride=}1, {SuppressBias=}0),
+  TNNetMaxPool.Create44({Size=}2, 0, 0),
+  TNNetConvolutionReLU.Create({Features=}32, 
+                    {FeatureSize=}5, {Padding=}0, {Stride=}1, {SuppressBias=}0),
+  TNNetMaxPool.Create44({Size=}2,0,0),
+  TNNetConvolutionReLU.Create({Features=}32, 
+                    {FeatureSize=}5, {Padding=}0, {Stride=}1, {SuppressBias=}0),
+  TNNetFullConnectReLU.Create30({Neurons=}32,0),
+  TNNetFullConnectLinear.Create28(NumClasses,0),
+  TNNetSoftMax.Create()
+                ]);
+  
+  
+   //Loading 10K images from file "data_batch_1.bin" ...
+  //ShowNeurons
+  //LoadNNLayersIntoCombo
+  //LoadTinyImageIntoTImage(var TI: TTinyImage; var Image: TImage);
+  
+  //function CheckCIFARFile():boolean;
+ //procedure loadCifar10Dataset(ImgVolumes: TNNetVolumeList; idx:integer; base_pos:integer = 0; color_encoding: byte = csEncodeRGB); overload;
+  
+  //loadCifar10Dataset6(ImgVolumes, 1, 0, csEncodeRGB); //overload;
+  //if not (FileExists('data_batch_1.bin')) then --- files must be in root
+  //NN.DebugStructure();
+  writeln('CheckCIFARFile() '+botostr(CheckCIFARFile()));
+  //CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes); 
+  try   
+     CreateCifar10Volumes(ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, csEncodeRGB);
+  except
+     writeln(exceptiontostring(exceptiontype, exceptionparam))
+  end
+  WriteLn('Neural Network will minimize error with:');
+  WriteLn(' Layers: '+itoa( NN.CountLayers()));
+  WriteLn(' Neurons: '+itoa( NN.CountNeurons()));
+  WriteLn(' Weights: '+itoa( NN.CountWeights()));  
+  
+  NeuralFit := TNeuralImageFit.Create;
+  NeuralFit.InitialLearningRate := fLearningRate;
+  NeuralFit.FileNameBase:= 'EKONSimpleImageClassifier2'+IntToStr(GetProcessId());
+  NeuralFit.Inertia := 0.8;
+  NeuralFit.LearningRateDecay := 0.005;
+    NeuralFit.StaircaseEpochs := 17;
+   // NeuralFit.Inertia := 0.9;
+    NeuralFit.L2Decay := 0.00001;
+    neuralfit.verbose:= true;
+  try 
+  writeln(neuralfit.FileNameBase)
+  try
+  NeuralFit.Fit(NN, ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes, {NumClasses=}10, {batchsize=}64, {epochs=}2); 
+  except
+    writeln('writeln Exceptpn!!')
+   end; 
+  
+  //NeuralFit.Fit(NN, ImgTrainingVolumes,ImgValidationVolumes,ImgTestVolumes, NumClasses,           //       {batchsize}128, {epochs}100)
+  
+  finally
+    NN.Free;
+    NeuralFit.Free;   
+    ImgTestVolumes.Free;
+    ImgValidationVolumes.Free;
+    ImgTrainingVolumes.Free;
+    writeln('all frees...');
+  end;     *)
+ 
+
+Doc: Destroying it calls Py_Finalize, which frees all memory allocated by the Python DLL.
+
+Or, if you're just using the Python API without the VCL wrappers, you can probably just call Py_NewInterpreter on your TPythonInterface object to get a fresh execution environment without necessarily discarding everything done before.
+
+Evil eval()
+
+You should never pass untrusted source to the eval() directly. As it is quite easy for the malicious user to wreak havoc on your system. For example, the following code can be used to delete all the files from the system.    1.0542
+
+1 >>>
+2 eval('os.system("RM -RF /")') # command is deliberately capitalized
+3 >>>
+
+procedure TNNet.LoadDataFromString(strData: string);
+var
+  S: TStringList;
+  Cnt: integer;
+begin
+  S := CreateTokenizedStringList(strData,'!');
+
+  if S.Count = FLayers.Count then
+  begin
+    if S.Count > 0 then
+    begin
+      for Cnt := 0 to S.Count - 1 do
+      begin
+        FLayers[Cnt].LoadDataFromString(S[Cnt]);
+      end;
+    end;
+  end
+  else
+  begin
+    FErrorProc
+    (
+      'Error while loading network: number of structure layers '+
+      IntToStr(FLayers.Count)+' differ from data loaded layers '+
+      IntToStr(S.Count)
+    );
+
+
+Ref:   https://github.com/joaopauloschuler/neural-api
+
+ 
+As we grow, we occasionally need to update our terms of service. To keep using Bitbucket Cloud, review and agree to the updated terms. To learn more, please see our Summary of Changes.
+
+
+              _od#HMM6&*MMMH::-_
+          _dHMMMR??MMM? ""| `"'-?Hb_
+       .~HMMMMMMMMHMMM#M?        `*HMb.
+     ./?HMMMMMMMMMMM"*"""           &MHb.
+    /'|MMMMMMMMMMM'             -   `*MHM\
+   /  |MMMMMMHHM''                   .MMMHb
+  |   9HMMP   .Hq,                   TMMMMMH
+ /     |MM\,H-""&&6\__               `MMMMMMb
+|       `""HH#,       \             - MMMMMMM|
+|           `HoodHMM###.              `9MMMMMH
+|              .MMMMMMMM##\             `*"?HM
+|         ..  ,HMMMMMMMMMMMo\.              |M
+|             |MMMMMMMMMMMMMMMMHo           |M
+|              ?MMMMMMMMMMMMMMMM*           |H
+|.              `#MMMMMMMMMMMMM'           .M|
+ \                `MMMMMMMMMMM*            |P
+ `\                MMMMMMMMT"'            ,H
+  `\              `MMMMMMH?              ./
+    \.            |MMMH#"               ,/
+     `\.          |MMP'               ./'
+       `~\        `HM:.-    .       ,/'
+          "-\_       '_\ .      _.-"
+              "-\-#odMM\_,oo==-"
+    
+
+normal
+             uninvolving = True              neg : pos    =     11.7 : 1.0
+                  avoids = True              pos : neg    =     11.7 : 1.0
+             fascination = True              pos : neg    =     10.3 : 1.0
+              astounding = True              pos : neg    =     10.3 : 1.0
+                 idiotic = True              neg : pos    =      9.8 : 1.0
+    |   n   p |                   |   n   p |    Stemmer more false positive
+    |   e   o |                   |   e   o | 
+    |   g   s |                   |   g   s | 
+----+---------+               ----+---------+ 
+neg |<119>131 |               neg |<110>140 | 
+pos |   5<245>|               pos |   5<245>| 
+----+---------+               ----+---------+ 
+(row = reference; col = test)
+
+unit uPSI_neuraldatasets;
+{
+mindset let mindset set
+
+}
+interface
+ 
+uses
+   SysUtils
+  ,Classes
+  ,uPSComponent
+  ,uPSRuntime
+  ,uPSCompiler
+  ;
+ 
+type 
+(*----------------------------------------------------------------------------*)
+  TPSImport_neuraldatasets = class(TPSPlugin)
+  public
+    procedure CompileImport1(CompExec: TPSScript); override;
+    procedure ExecImport1(CompExec: TPSScript; const ri: TPSRuntimeClassImporter); override;
+  end;
+ 
+{ compile-time registration functions }
+procedure SIRegister_TClassesAndElements(CL: TPSPascalCompiler);
+procedure SIRegister_TFileNameList(CL: TPSPascalCompiler);
+procedure SIRegister_neuraldatasets(CL: TPSPascalCompiler);
+
+{ run-time registration functions }
+procedure RIRegister_neuraldatasets_Routines(S: TPSExec);
+procedure RIRegister_TClassesAndElements(CL: TPSRuntimeClassImporter);
+procedure RIRegister_TFileNameList(CL: TPSRuntimeClassImporter);
+procedure RIRegister_neuraldatasets(CL: TPSRuntimeClassImporter);
+
+procedure Register;
+
+implementation
+
+
+uses
+   neuraldatasets, neuralnetworkCAI, neuralvolume , neuralthread ,math
+  ;
+ 
+ 
+procedure Register;
+begin
+  RegisterComponents('Pascal Script', [TPSImport_neuraldatasets]);
+end;
+
+(* === compile-time registration functions === *)
+(*----------------------------------------------------------------------------*)
+procedure SIRegister_TClassesAndElements(CL: TPSPascalCompiler);
+begin
+  //with RegClassS(CL,'TStringStringListVolume', 'TClassesAndElements') do
+  with CL.AddClassN(CL.FindClass('TStringStringListVolume'),'TClassesAndElements') do
+  begin
+    RegisterMethod('Constructor Create( )');
+    Function CountElements( ) : integer');
+    Procedure LoadFoldersAsClasses( FolderName : string; pImageSubFolder : string; SkipFirst : integer; SkipLast : integer)');
+    Procedure LoadFoldersAsClassesProportional( FolderName : string; pImageSubFolder : string; fSkipFirst : TNeuralFloat; fLoadLen : TNeuralFloat)');
+    Procedure LoadImages0( color_encoding : integer; NewSizeX : integer; NewSizeY : integer);');
+    Procedure LoadClass_FilenameFromFolder( FolderName : string)');
+    Function GetRandomClassId( ) : integer');
+    Function GetClassesCount( ) : integer');
+    Procedure GetRandomFileId( out ClassId : integer; out FileId : integer; StartPos : TNeuralFloat; Range : TNeuralFloat)');
+    Procedure GetRandomFileName( out ClassId : integer; out FileName : string; StartPos : TNeuralFloat; Range : TNeuralFloat)');
+    Procedure GetRandomImgVolumes( vInput, vOutput : TNNetVolume; StartPos : TNeuralFloat; Range : TNeuralFloat)');
+    Function GetFileName( ClassId, ElementId : integer) : string');
+    Procedure AddVolumesTo( Volumes : TNNetVolumeList; EmptySource : boolean)');
+    Procedure AddFileNamesTo( FileNames : TFileNameList)');
+    Procedure MakeMonopolar( Divisor : TNeuralFloat)');
+    Function FileCountAtClassId( ClassId : integer) : integer');
+    Procedure LoadImages_NTL( index, threadnum : integer)');
+  end;
+end;
+
+(*----------------------------------------------------------------------------*)
+procedure SIRegister_TFileNameList(CL: TPSPascalCompiler);
+begin
+  //with RegClassS(CL,'TStringListInt', 'TFileNameList') do
+  with CL.AddClassN(CL.FindClass('TStringListInt'),'TFileNameList') do
+  begin
+    Constructor Create( )');
+    Procedure GetImageVolumePairFromId( ImageId : integer; vInput, vOutput : TNNetVolume; ThreadDangerous : boolean)');
+    Procedure GetRandomImagePair( vInput, vOutput : TNNetVolume)');
+    Function ThreadSafeLoadImageFromFileIntoVolume( ImageFileName : string; V : TNNetVolume) : boolean');
+    RegisterProperty('ClassCount', 'integer', iptrw);
+  end;
+end;
+
+(*----------------------------------------------------------------------------*)
+procedure SIRegister_neuraldatasets(CL: TPSPascalCompiler);
+begin
+  CL.AddTypeS('TTinyImageChannel','array [0..31] of array[0..31] of byte; ');
+  CL.AddTypeS('TTinyImageChannel1D','array [0..32 * 32 - 1] of byte; ');
+  CL.AddTypeS('TMNistImage','array [0..27] of array[0..27] of byte; ');
+  //TTinyImageChannel1D = packed array [0..32 * 32 - 1] of byte;
+  //TMNistImage = packed array [0..27, 0..27] of byte;
+
+  CL.AddTypeS('TTinyImage', 'record bLabel : byte; R : TTinyImageChannel; G : T'
+   +'TinyImageChannel; B : TTinyImageChannel; end');
+  CL.AddTypeS('TCifar100Image', 'record bCoarseLabel : byte; bFineLabel : byte;'
+   +' R : TTinyImageChannel; G : TTinyImageChannel; B : TTinyImageChannel; end');
+  CL.AddTypeS('TTinySingleChannelImage', 'record bLabel : byte; Grey : TTinyImageChannel; end');
+  CL.AddTypeS('TTinySingleChannelImage1D', 'record bLabel : byte; Grey : TTinyImageChannel1D; end');
+  //CL.AddTypeS('TTinySingleChannelImagePtr','^TTinySingleChannelImage// will not work');
+  //CL.AddTypeS('TTinySingleChannelImage1DPtr', '^TTinySingleChannelImage1D // will not work');
+  SIRegister_TFileNameList(CL);
+  SIRegister_TClassesAndElements(CL);
+ CL.AddDelphiFunction('Procedure CreateVolumesFromImagesFromFolder(out ImgTrainingVolumes,ImgValidationVolumes,ImgTestVolumes:TNNetVolumeList;FolderName,pImageSubFolder:string;color_encoding:integer;TrainingProp,ValidationProp,TestProp:single;'+
+                                                 'NewSizeX:integer;NewSizeY:integer)');
+ CL.AddDelphiFunction('Procedure CreateFileNameListsFromImagesFromFolder( out TrainingFileNames, ValidationFileNames, TestFileNames : TFileNameList; FolderName, pImageSubFolder : string; TrainingProp, ValidationProp, TestProp : single)');
+ //Procedure LoadImageIntoVolume( M : TFPMemoryImage; Vol : TNNetVolume)');
+ //Procedure LoadVolumeIntoImage( Vol : TNNetVolume; M : TFPMemoryImage)');
+ Function LoadImageFromFileIntoVolume(ImageFileName:string;V:TNNetVolume):boolean');
+ Function SaveImageFromVolumeIntoFile(V:TNNetVolume;ImageFileName:string):boolean');
+ Procedure ConfusionWriteCSVHeader(var CSVConfusion:TextFile;Labels:array of string);
+ Procedure ConfusionWriteCSV( var CSVConfusion : TextFile; Vol : TNNetVolume; Digits : integer)');
+ Procedure LoadTinyImageIntoNNetVolume1( var TI : TTinyImage; Vol : TNNetVolume);');
+ Procedure LoadTinyImageIntoNNetVolume2(var TI:TCifar100Image; Vol : TNNetVolume);');
+ Procedure LoadTinyImageIntoNNetVolume3( var TI : TMNistImage; Vol : TNNetVolume);');
+ Procedure LoadNNetVolumeIntoTinyImage4( Vol : TNNetVolume; var TI : TTinyImage);');
+ Procedure LoadNNetVolumeIntoTinyImage5(Vol: TNNetVolume;var TI: TCifar100Image);');
+ Procedure LoadTinySingleChannelIntoNNetVolume( var SC : TTinySingleChannelImage; Vol : TNNetVolume)');
+ Procedure TinyImageCreateGrey(var TI:TTinyImage;var TIGrey:TTinySingleChannelImage);
+ Procedure TinyImageHE( var TI, TIHE : TTinySingleChannelImage)');
+ Procedure TinyImageVE( var TI, TIVE : TTinySingleChannelImage)');
+ Procedure TinyImageRemoveZeroGradient(var TI:TTinySingleChannelImage;distance:byte);
+ Procedure TinyImageHVE( var TI, TIHE : TTinySingleChannelImage)');
+ Function TinyImageTo1D(var TI:TTinySingleChannelImage):TTinySingleChannelImage1D');
+ Procedure CreateCifar10Volumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; color_encoding : byte)');
+ Procedure CreateCifar100Volumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; color_encoding : byte; Verbose : boolean)');
+ Procedure CreateMNISTVolumes( out ImgTrainingVolumes, ImgValidationVolumes, ImgTestVolumes : TNNetVolumeList; TrainFileName, TestFileName : string; Verbose : boolean; IsFashion : boolean)');
+ Procedure loadCifar10Dataset6( ImgVolumes : TNNetVolumeList; idx : integer; base_pos : integer; color_encoding : byte);');
+ Procedure loadCifar10Dataset7( ImgVolumes : TNNetVolumeList; fileName : string; base_pos : integer; color_encoding : byte);');
+ Procedure loadCifar100Dataset( ImgVolumes : TNNetVolumeList; fileName : string; color_encoding : byte; Verbose : boolean)');
+ Procedure loadMNISTDataset( ImgVolumes : TNNetVolumeList; fileName : string; Verbose : boolean; IsFashion : boolean; MaxLabel : integer);');
+ Function CheckCIFARFile( ) : boolean');
+ Function CheckCIFAR100File( ) : boolean');
+ Function CheckMNISTFile( fileName : string; IsFasion : boolean) : boolean');
+ Procedure TestBatch( NN : TNNet; ImgVolumes : TNNetVolumeList; SampleSize : integer; out Rate, Loss, ErrorSum : TNeuralFloat)');
+ Procedure TranslateCifar10VolumesToMachineAnimal( VolumeList : TNNetVolumeList)');
+ Function SwapEndian( I : integer) : integer');
+end;
+
+ref: 79040 Examples seen. Accuracy: 0.5319 Error: 1.23225 Loss: 1.21518 Threads: 1 Forward time: 3.92s Backward time: 0.40s Step time: 21.66s
+79680 Examples seen. Accuracy: 0.5325 Error: 1.15048 Loss: 1.26929 Threads: 1 Forward time: 3.91s Backward time: 0.40s Step time: 21.62s
+40000 of samples have been processed.
+Starting Validation.
+VALIDATION RECORD! Saving NN at SimpleImageClassifier-16796.nn
+
+
+the whole log and protocol with 5 epochs:
+
+Hot Log Script started
+Compiling  maXbox4 684 lines
+Codelines in window: 21
+Macro Expanded 684 lines
+C:\maXbox\EKON_BASTA\EKON24\examples\1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt File stored
+1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt in maxboxdef.ini stored: 08:51:43
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(170:7): Variable 'PREDICTEDVOLUME' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(170:7): Variable 'PREDICTEDVOLUME' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(170:7): Variable 'VDESIREDVOLUME' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(170:7): Variable 'VDESIREDVOLUME' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(203:4): Variable 'NEURALFIT' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(203:4): Variable 'NEURALFIT' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(204:4): Variable 'IMGTRAININGVOLUMES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(204:4): Variable 'IMGTRAININGVOLUMES' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(204:4): Variable 'IMGVALIDATIONVOLUMES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(204:4): Variable 'IMGVALIDATIONVOLUMES' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(204:4): Variable 'IMGTESTVOLUMES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(204:4): Variable 'IMGTESTVOLUMES' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(239:5): Variable 'INP' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(239:5): Variable 'INP' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(239:5): Variable 'OUTP' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(239:5): Variable 'OUTP' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(309:6): Variable 'F1' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(309:6): Variable 'F1' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(309:6): Variable 'F2' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(309:6): Variable 'F2' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:9): Variable 'A' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:9): Variable 'A' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:9): Variable 'B' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:9): Variable 'B' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:31): Variable 'AX' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:31): Variable 'AX' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:51): Variable 'AINT64' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:51): Variable 'AINT64' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:51): Variable 'AINT64_' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(310:51): Variable 'AINT64_' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(311:5): Variable 'NN' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(311:5): Variable 'NN' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(311:19): Variable 'NUMCLASSES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(311:19): Variable 'NUMCLASSES' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(312:5): Variable 'IMGTRAININGVOLUMES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(312:5): Variable 'IMGTRAININGVOLUMES' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(312:5): Variable 'IMGVALIDATIONVOLUMES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(312:5): Variable 'IMGVALIDATIONVOLUMES' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(312:5): Variable 'IMGTESTVOLUMES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(312:5): Variable 'IMGTESTVOLUMES' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(313:5): Variable 'NEURALFIT' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(313:5): Variable 'NEURALFIT' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(313:35): Variable 'FLEARNINGRATE' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(313:35): Variable 'FLEARNINGRATE' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(314:6): Variable 'TRAININGPAIRS' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(314:6): Variable 'TRAININGPAIRS' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(314:6): Variable 'VALIDATIONPAIRS' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(314:6): Variable 'VALIDATIONPAIRS' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(314:6): Variable 'TESTPAIRS' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(314:6): Variable 'TESTPAIRS' never used
+PSXCompiler: [Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(315:6): Variable 'IMGVOLUMES' never used
+[Hint] 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt(315:6): Variable 'IMGVOLUMES' never used
+XCompiler Message Count: 26
+ maXbox4 1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt Compiled done: 16/11/2021 08:51:43
+--------------------------------------------------------
+502
+ Layers: 3
+ Neurons: 64
+ Weights: 4800
+ Sum: -1.56723809242249
+Layer 0 Neurons:0 Weights:0 TNNetInput(32,32,3,0,0) Output:32,32,3 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  0.0000 
+ Branches:1
+Layer 1 Neurons:64 Weights:4800 TNNetConvolutionReLU(64,5,1,1,0) Output:30,30,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum: -1.5672 
+ Parent:0
+ Branches:1
+Layer 2 Neurons:0 Weights:0 TNNetSoftMax(0,0,0,0,0) Output:30,30,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  0.0000 
+ Parent:1
+ Branches:0
+GetBiasSum 0
+Compute - Wrong Input Size:1 Expected size is:3072 Have you missed the TNNetInput layer?
+InputVolume.Free;
+3.141592653589793
+Creating CNeural Network...
+ Layers: 9
+ Neurons: 139
+ Weights: 51906
+ Sum: 29.8971920013428
+Layer 0 Neurons:0 Weights:0 TNNetInput(32,32,3,0,0) Output:32,32,3 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  0.0000 
+ Branches:1
+Layer 1 Neurons:64 Weights:4800 TNNetConvolutionLinear(64,5,2,1,0) Output:32,32,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  5.6414 
+ Parent:0
+ Branches:1
+Layer 2 Neurons:0 Weights:0 TNNetPoolBase(4,4,0,0,0) Output:8,8,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  0.0000 
+ Parent:1
+ Branches:1
+Layer 3 Neurons:1 Weights:2 TNNetMovingStdNormalization(0,0,0,0,0) Output:8,8,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  1.0000 
+ Parent:2
+ Branches:1
+Layer 4 Neurons:64 Weights:36864 TNNetConvolutionReLU(64,3,1,1,0) Output:8,8,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum: 21.4852 
+ Parent:3
+ Branches:1
+Layer 5 Neurons:0 Weights:0 TNNetDropout(2,0,0,0,0) Output:8,8,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  0.0000 
+ Parent:4
+ Branches:1
+Layer 6 Neurons:0 Weights:0 TNNetPoolBase(2,2,0,0,0) Output:4,4,64 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  0.0000 
+ Parent:5
+ Branches:1
+Layer 7 Neurons:10 Weights:10240 TNNetFullConnectLinear(10,1,1,0,0) Output:10,1,1 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  1.7706 
+ Parent:6
+ Branches:1
+Layer 8 Neurons:0 Weights:0 TNNetSoftMax(0,0,0,0,0) Output:10,1,1 Learning Rate:0.0100  Inertia:0.90  Weight Sum:  0.0000 
+ Parent:7
+ Branches:0
+Loading 10K images from file "data_batch_1.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+Loading 10K images from file "data_batch_2.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+Loading 10K images from file "data_batch_3.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+Loading 10K images from file "data_batch_4.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+Loading 10K images from file "data_batch_5.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+Loading 10K images from file "test_batch.bin" ...
+ GLOBAL MIN MAX -2  1.984375
+ Done...
+layers count 9
+TRUE
+totalsize 122880000
+coint 40000
+Debug Fit Epochs: 5
+Debug Fit Batchsize: 128
+Debug Fit stepsize: 128
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetPoolBase:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetPoolBase:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Fit TNNetDataParallelismCloneLen: 1012807
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug Fit NN.LoadFromString: 9
+Debug Fit TNNetDataParallelism: 1
+Debug Fit Hyperparams init: 0
+File name is: SimpleImageClassifierEKON25-5000
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetPoolBase:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetPoolBase:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Learning rate:0.001000 L2 decay:0.000010 Inertia:0.900000 Batch size:128 Step size:128 Staircase epochs mX4:10
+Training images: 40000
+Validation images: 10000
+Test images: 10000
+Image mX4 Fit Computing starts...
+1280 Examples seen. Accuracy: 0.0687 Error: 1.70519 Loss: 2.21447 Threads: 1 Forward time: 6.14s Backward time: 0.43s Step time: 32.85s
+2560 Examples seen. Accuracy: 0.0868 Error: 1.63691 Loss: 1.91736 Threads: 1 Forward time: 5.87s Backward time: 0.44s Step time: 32.52s
+3840 Examples seen. Accuracy: 0.1054 Error: 1.55177 Loss: 1.95123 Threads: 1 Forward time: 5.94s Backward time: 0.48s Step time: 33.23s
+5120 Examples seen. Accuracy: 0.1232 Error: 1.57066 Loss: 1.92421 Threads: 1 Forward time: 5.89s Backward time: 0.46s Step time: 33.20s
+6400 Examples seen. Accuracy: 0.1457 Error: 1.48578 Loss: 1.62941 Threads: 1 Forward time: 5.83s Backward time: 0.43s Step time: 33.79s
+7680 Examples seen. Accuracy: 0.1685 Error: 1.45568 Loss: 1.67192 Threads: 1 Forward time: 5.83s Backward time: 0.43s Step time: 31.40s
+8960 Examples seen. Accuracy: 0.1885 Error: 1.46026 Loss: 1.72939 Threads: 1 Forward time: 5.82s Backward time: 0.41s Step time: 31.35s
+10240 Examples seen. Accuracy: 0.2072 Error: 1.50044 Loss: 1.64772 Threads: 1 Forward time: 5.97s Backward time: 0.44s Step time: 31.49s
+11520 Examples seen. Accuracy: 0.2243 Error: 1.46549 Loss: 1.69811 Threads: 1 Forward time: 5.79s Backward time: 0.44s Step time: 32.59s
+12800 Examples seen. Accuracy: 0.2433 Error: 1.40308 Loss: 1.54712 Threads: 1 Forward time: 5.83s Backward time: 0.44s Step time: 31.28s
+14080 Examples seen. Accuracy: 0.2607 Error: 1.42778 Loss: 1.66995 Threads: 1 Forward time: 5.84s Backward time: 0.41s Step time: 31.40s
+15360 Examples seen. Accuracy: 0.2755 Error: 1.37264 Loss: 1.56801 Threads: 1 Forward time: 5.84s Backward time: 0.43s Step time: 31.28s
+16640 Examples seen. Accuracy: 0.2907 Error: 1.31344 Loss: 1.51413 Threads: 1 Forward time: 5.92s Backward time: 0.43s Step time: 31.54s
+17920 Examples seen. Accuracy: 0.3045 Error: 1.37209 Loss: 1.57103 Threads: 1 Forward time: 5.88s Backward time: 0.41s Step time: 31.73s
+19200 Examples seen. Accuracy: 0.3171 Error: 1.35675 Loss: 1.58933 Threads: 1 Forward time: 5.88s Backward time: 0.43s Step time: 31.57s
+20480 Examples seen. Accuracy: 0.3297 Error: 1.42836 Loss: 1.78098 Threads: 1 Forward time: 5.93s Backward time: 0.44s Step time: 31.80s
+21760 Examples seen. Accuracy: 0.3396 Error: 1.39580 Loss: 1.63003 Threads: 1 Forward time: 5.91s Backward time: 0.44s Step time: 31.71s
+23040 Examples seen. Accuracy: 0.3510 Error: 1.31319 Loss: 1.40051 Threads: 1 Forward time: 5.86s Backward time: 0.41s Step time: 31.81s
+24320 Examples seen. Accuracy: 0.3570 Error: 1.36304 Loss: 1.43478 Threads: 1 Forward time: 5.87s Backward time: 0.42s Step time: 31.51s
+25600 Examples seen. Accuracy: 0.3665 Error: 1.28326 Loss: 1.44406 Threads: 1 Forward time: 5.96s Backward time: 0.42s Step time: 31.79s
+26880 Examples seen. Accuracy: 0.3745 Error: 1.33712 Loss: 1.56548 Threads: 1 Forward time: 5.89s Backward time: 0.44s Step time: 31.55s
+28160 Examples seen. Accuracy: 0.3838 Error: 1.30606 Loss: 1.42117 Threads: 1 Forward time: 5.87s Backward time: 0.40s Step time: 31.68s
+29440 Examples seen. Accuracy: 0.3912 Error: 1.34231 Loss: 1.51001 Threads: 1 Forward time: 6.44s Backward time: 0.49s Step time: 32.00s
+30720 Examples seen. Accuracy: 0.4004 Error: 1.28650 Loss: 1.46728 Threads: 1 Forward time: 5.89s Backward time: 0.40s Step time: 32.08s
+32000 Examples seen. Accuracy: 0.4068 Error: 1.39372 Loss: 1.62975 Threads: 1 Forward time: 5.86s Backward time: 0.42s Step time: 31.47s
+33280 Examples seen. Accuracy: 0.4143 Error: 1.27021 Loss: 1.40321 Threads: 1 Forward time: 5.88s Backward time: 0.41s Step time: 32.39s
+34560 Examples seen. Accuracy: 0.4255 Error: 1.24944 Loss: 1.50189 Threads: 1 Forward time: 5.92s Backward time: 0.42s Step time: 31.52s
+35840 Examples seen. Accuracy: 0.4339 Error: 1.30133 Loss: 1.47711 Threads: 1 Forward time: 5.94s Backward time: 0.42s Step time: 32.56s
+37120 Examples seen. Accuracy: 0.4374 Error: 1.39415 Loss: 1.55815 Threads: 1 Forward time: 5.87s Backward time: 0.41s Step time: 32.44s
+38400 Examples seen. Accuracy: 0.4428 Error: 1.30975 Loss: 1.41201 Threads: 1 Forward time: 5.85s Backward time: 0.43s Step time: 32.33s
+39680 Examples seen. Accuracy: 0.4509 Error: 1.27018 Loss: 1.48270 Threads: 1 Forward time: 5.87s Backward time: 0.41s Step time: 31.40s
+40000 of samples have been processed.
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetPoolBase:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetPoolBase:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Fit TNNetDataParallelismCloneLen: 1015603
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug TNNet.Struct.LoadFromString ST: 
+-1)TNNetInput:32;32;3;0;0;0;0;0
+0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+1)TNNetPoolBase:4;4;0;0;0;0;0;0
+2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+4)TNNetDropout:2;0;0;0;0;0;0;0
+5)TNNetPoolBase:2;2;0;0;0;0;0;0
+6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+7)TNNetSoftMax:0;0;0;0;0;0;0;0
+
+debug createLayer():TNNetInput-addLayerAfter-1...TNNetInput:32;32;3;0;0;0;0;0
+debug createLayer():TNNetConvolutionLinear-addLayerAfter0...TNNetConvolutionLinear:64;5;2;1;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter1...TNNetPoolBase:4;4;0;0;0;0;0;0
+debug createLayer():TNNetMovingStdNormalization-addLayerAfter2...TNNetMovingStdNormalization:0;0;0;0;0;0;0;0
+debug createLayer():TNNetConvolutionReLU-addLayerAfter3...TNNetConvolutionReLU:64;3;1;1;0;0;0;0
+debug createLayer():TNNetDropout-addLayerAfter4...TNNetDropout:2;0;0;0;0;0;0;0
+debug createLayer():TNNetPoolBase-addLayerAfter5...TNNetPoolBase:2;2;0;0;0;0;0;0
+debug createLayer():TNNetFullConnectLinear-addLayerAfter6...TNNetFullConnectLinear:10;1;1;0;0;0;0;0
+debug createLayer():TNNetSoftMax-addLayerAfter7...TNNetSoftMax:0;0;0;0;0;0;0;0
+Debug Struct.LoadFromString: 2
+Debug TNNet Loaded Data Layers:9  SCount:9
+Debug Data.LoadFromString: 2
+Debug Fit NN.LoadFromString: 9
+Starting Validation.
+VALIDATION RECORD! Saving NN at SimpleImageClassifierEKON25-5000.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetMaxPool:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetMaxPool:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 1 Examples seen:40000 Validation Accuracy: 0.5827 Validation Error: 1.0888 Validation Loss: 1.1893 Total time: 28.18min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 16.0000 minutes. 5 epochs: 1.4000 hours.
+Epochs: 1. Working time: 0.47 hours.
+41280 Examples seen. Accuracy: 0.4577 Error: 1.30271 Loss: 1.54846 Threads: 1 Forward time: 5.93s Backward time: 0.41s Step time: 31.65s
+42560 Examples seen. Accuracy: 0.4638 Error: 1.18975 Loss: 1.31247 Threads: 1 Forward time: 5.91s Backward time: 0.40s Step time: 32.60s
+43840 Examples seen. Accuracy: 0.4687 Error: 1.13661 Loss: 1.21986 Threads: 1 Forward time: 6.02s Backward time: 0.42s Step time: 32.00s
+45120 Examples seen. Accuracy: 0.4739 Error: 1.22188 Loss: 1.41765 Threads: 1 Forward time: 5.86s Backward time: 0.41s Step time: 36.83s
+46400 Examples seen. Accuracy: 0.4790 Error: 1.30389 Loss: 1.41744 Threads: 1 Forward time: 5.96s Backward time: 0.42s Step time: 31.65s
+47680 Examples seen. Accuracy: 0.4844 Error: 1.22603 Loss: 1.39943 Threads: 1 Forward time: 5.88s Backward time: 0.41s Step time: 34.11s
+48960 Examples seen. Accuracy: 0.4858 Error: 1.25557 Loss: 1.44331 Threads: 1 Forward time: 5.80s Backward time: 0.41s Step time: 31.46s
+50240 Examples seen. Accuracy: 0.4884 Error: 1.30987 Loss: 1.51207 Threads: 1 Forward time: 5.86s Backward time: 0.42s Step time: 32.42s
+51520 Examples seen. Accuracy: 0.4912 Error: 1.20844 Loss: 1.33048 Threads: 1 Forward time: 5.96s Backward time: 0.42s Step time: 32.66s
+52800 Examples seen. Accuracy: 0.4918 Error: 1.27074 Loss: 1.49912 Threads: 1 Forward time: 5.87s Backward time: 0.40s Step time: 33.68s
+54080 Examples seen. Accuracy: 0.4951 Error: 1.24577 Loss: 1.34940 Threads: 1 Forward time: 5.86s Backward time: 0.41s Step time: 32.72s
+55360 Examples seen. Accuracy: 0.5018 Error: 1.15934 Loss: 1.20118 Threads: 1 Forward time: 6.28s Backward time: 0.45s Step time: 31.98s
+56640 Examples seen. Accuracy: 0.5063 Error: 1.14536 Loss: 1.27126 Threads: 1 Forward time: 6.21s Backward time: 0.45s Step time: 33.07s
+57920 Examples seen. Accuracy: 0.5091 Error: 1.15130 Loss: 1.31869 Threads: 1 Forward time: 6.44s Backward time: 0.49s Step time: 39.46s
+59200 Examples seen. Accuracy: 0.5099 Error: 1.14617 Loss: 1.23653 Threads: 1 Forward time: 6.15s Backward time: 0.43s Step time: 33.79s
+60480 Examples seen. Accuracy: 0.5092 Error: 1.31546 Loss: 1.61594 Threads: 1 Forward time: 6.11s Backward time: 0.40s Step time: 34.33s
+61760 Examples seen. Accuracy: 0.5093 Error: 1.24832 Loss: 1.46574 Threads: 1 Forward time: 7.27s Backward time: 0.59s Step time: 33.05s
+63040 Examples seen. Accuracy: 0.5097 Error: 1.15055 Loss: 1.25648 Threads: 1 Forward time: 6.60s Backward time: 0.49s Step time: 34.82s
+64320 Examples seen. Accuracy: 0.5116 Error: 1.15897 Loss: 1.24638 Threads: 1 Forward time: 6.18s Backward time: 0.45s Step time: 37.18s
+65600 Examples seen. Accuracy: 0.5107 Error: 1.22195 Loss: 1.44880 Threads: 1 Forward time: 5.98s Backward time: 0.41s Step time: 32.39s
+66880 Examples seen. Accuracy: 0.5126 Error: 1.20572 Loss: 1.40699 Threads: 1 Forward time: 6.23s Backward time: 0.49s Step time: 31.94s
+68160 Examples seen. Accuracy: 0.5135 Error: 1.21233 Loss: 1.34665 Threads: 1 Forward time: 5.90s Backward time: 0.40s Step time: 32.72s
+69440 Examples seen. Accuracy: 0.5177 Error: 1.21772 Loss: 1.32839 Threads: 1 Forward time: 5.93s Backward time: 0.38s Step time: 31.69s
+70720 Examples seen. Accuracy: 0.5192 Error: 1.29831 Loss: 1.49110 Threads: 1 Forward time: 5.92s Backward time: 0.40s Step time: 31.77s
+72000 Examples seen. Accuracy: 0.5193 Error: 1.24165 Loss: 1.44882 Threads: 1 Forward time: 5.90s Backward time: 0.40s Step time: 32.46s
+73280 Examples seen. Accuracy: 0.5217 Error: 1.17097 Loss: 1.28212 Threads: 1 Forward time: 5.92s Backward time: 0.38s Step time: 32.70s
+74560 Examples seen. Accuracy: 0.5232 Error: 1.16541 Loss: 1.27526 Threads: 1 Forward time: 5.94s Backward time: 0.42s Step time: 31.74s
+75840 Examples seen. Accuracy: 0.5243 Error: 1.15583 Loss: 1.29203 Threads: 1 Forward time: 5.85s Backward time: 0.39s Step time: 32.50s
+77120 Examples seen. Accuracy: 0.5280 Error: 1.20880 Loss: 1.33039 Threads: 1 Forward time: 5.92s Backward time: 0.38s Step time: 31.47s
+78400 Examples seen. Accuracy: 0.5295 Error: 1.23483 Loss: 1.38068 Threads: 1 Forward time: 6.05s Backward time: 0.44s Step time: 32.62s
+79680 Examples seen. Accuracy: 0.5306 Error: 1.21342 Loss: 1.45680 Threads: 1 Forward time: 5.90s Backward time: 0.39s Step time: 32.59s
+40000 of samples have been processed.
+Starting Validation.
+VALIDATION RECORD! Saving NN at SimpleImageClassifierEKON25-5000.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetMaxPool:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetMaxPool:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 2 Examples seen:80000 Validation Accuracy: 0.5932 Validation Error: 1.0718 Validation Loss: 1.1574 Total time: 57.37min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 17.0000 minutes. 5 epochs: 1.4000 hours.
+Epochs: 2. Working time: 0.96 hours.
+81280 Examples seen. Accuracy: 0.5329 Error: 1.09233 Loss: 1.19232 Threads: 1 Forward time: 5.93s Backward time: 0.40s Step time: 34.59s
+82560 Examples seen. Accuracy: 0.5383 Error: 1.18755 Loss: 1.33939 Threads: 1 Forward time: 6.19s Backward time: 0.42s Step time: 32.99s
+83840 Examples seen. Accuracy: 0.5427 Error: 1.02926 Loss: 1.15076 Threads: 1 Forward time: 6.09s Backward time: 0.40s Step time: 32.19s
+85120 Examples seen. Accuracy: 0.5453 Error: 1.09157 Loss: 1.15834 Threads: 1 Forward time: 5.94s Backward time: 0.38s Step time: 34.75s
+86400 Examples seen. Accuracy: 0.5487 Error: 1.15828 Loss: 1.23004 Threads: 1 Forward time: 6.17s Backward time: 0.42s Step time: 35.01s
+87680 Examples seen. Accuracy: 0.5479 Error: 1.17083 Loss: 1.40832 Threads: 1 Forward time: 7.03s Backward time: 0.53s Step time: 35.66s
+88960 Examples seen. Accuracy: 0.5486 Error: 1.12834 Loss: 1.36432 Threads: 1 Forward time: 6.22s Backward time: 0.44s Step time: 32.57s
+90240 Examples seen. Accuracy: 0.5495 Error: 1.20822 Loss: 1.47590 Threads: 1 Forward time: 6.21s Backward time: 0.44s Step time: 33.62s
+91520 Examples seen. Accuracy: 0.5487 Error: 1.17788 Loss: 1.35977 Threads: 1 Forward time: 5.92s Backward time: 0.38s Step time: 32.66s
+92800 Examples seen. Accuracy: 0.5470 Error: 1.15340 Loss: 1.35123 Threads: 1 Forward time: 5.82s Backward time: 0.37s Step time: 31.03s
+94080 Examples seen. Accuracy: 0.5468 Error: 1.21983 Loss: 1.37491 Threads: 1 Forward time: 5.90s Backward time: 0.37s Step time: 32.34s
+95360 Examples seen. Accuracy: 0.5485 Error: 1.11674 Loss: 1.11900 Threads: 1 Forward time: 9.36s Backward time: 0.87s Step time: 33.28s
+96640 Examples seen. Accuracy: 0.5483 Error: 1.12113 Loss: 1.24046 Threads: 1 Forward time: 6.10s Backward time: 0.42s Step time: 32.15s
+97920 Examples seen. Accuracy: 0.5504 Error: 1.09509 Loss: 1.21659 Threads: 1 Forward time: 5.81s Backward time: 0.37s Step time: 31.70s
+99200 Examples seen. Accuracy: 0.5564 Error: 1.14825 Loss: 1.28546 Threads: 1 Forward time: 7.23s Backward time: 0.76s Step time: 35.86s
+100480 Examples seen. Accuracy: 0.5581 Error: 1.05497 Loss: 1.19123 Threads: 1 Forward time: 6.99s Backward time: 0.62s Step time: 39.22s
+101760 Examples seen. Accuracy: 0.5590 Error: 1.10405 Loss: 1.19159 Threads: 1 Forward time: 5.86s Backward time: 0.37s Step time: 33.47s
+103040 Examples seen. Accuracy: 0.5577 Error: 1.10199 Loss: 1.18074 Threads: 1 Forward time: 5.94s Backward time: 0.37s Step time: 34.53s
+104320 Examples seen. Accuracy: 0.5563 Error: 1.13450 Loss: 1.29416 Threads: 1 Forward time: 5.97s Backward time: 0.43s Step time: 36.35s
+105600 Examples seen. Accuracy: 0.5580 Error: 1.13429 Loss: 1.21972 Threads: 1 Forward time: 6.00s Backward time: 0.41s Step time: 32.92s
+106880 Examples seen. Accuracy: 0.5588 Error: 1.11036 Loss: 1.29304 Threads: 1 Forward time: 6.00s Backward time: 0.39s Step time: 31.89s
+108160 Examples seen. Accuracy: 0.5610 Error: 1.24603 Loss: 1.46169 Threads: 1 Forward time: 5.88s Backward time: 0.38s Step time: 32.19s
+109440 Examples seen. Accuracy: 0.5624 Error: 1.08662 Loss: 1.33333 Threads: 1 Forward time: 6.00s Backward time: 0.42s Step time: 32.60s
+110720 Examples seen. Accuracy: 0.5626 Error: 1.15721 Loss: 1.29878 Threads: 1 Forward time: 5.79s Backward time: 0.39s Step time: 31.55s
+112000 Examples seen. Accuracy: 0.5654 Error: 1.02066 Loss: 1.02050 Threads: 1 Forward time: 5.85s Backward time: 0.37s Step time: 31.12s
+113280 Examples seen. Accuracy: 0.5677 Error: 1.05937 Loss: 1.11263 Threads: 1 Forward time: 5.85s Backward time: 0.36s Step time: 31.98s
+114560 Examples seen. Accuracy: 0.5687 Error: 1.12321 Loss: 1.32533 Threads: 1 Forward time: 5.84s Backward time: 0.38s Step time: 33.05s
+115840 Examples seen. Accuracy: 0.5691 Error: 1.11633 Loss: 1.16572 Threads: 1 Forward time: 7.73s Backward time: 0.60s Step time: 32.66s
+117120 Examples seen. Accuracy: 0.5722 Error: 0.96950 Loss: 1.07643 Threads: 1 Forward time: 5.89s Backward time: 0.36s Step time: 33.45s
+118400 Examples seen. Accuracy: 0.5699 Error: 1.18475 Loss: 1.34076 Threads: 1 Forward time: 6.00s Backward time: 0.40s Step time: 33.13s
+119680 Examples seen. Accuracy: 0.5724 Error: 1.01302 Loss: 1.13080 Threads: 1 Forward time: 5.90s Backward time: 0.39s Step time: 32.95s
+40000 of samples have been processed.
+Starting Validation.
+VALIDATION RECORD! Saving NN at SimpleImageClassifierEKON25-5000.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetMaxPool:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetMaxPool:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 3 Examples seen:120000 Validation Accuracy: 0.6027 Validation Error: 1.0515 Validation Loss: 1.1275 Total time: 86.39min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 17.0000 minutes. 5 epochs: 1.4000 hours.
+Epochs: 3. Working time: 1.44 hours.
+121280 Examples seen. Accuracy: 0.5759 Error: 1.01840 Loss: 1.25393 Threads: 1 Forward time: 5.91s Backward time: 0.37s Step time: 32.42s
+122560 Examples seen. Accuracy: 0.5757 Error: 1.06193 Loss: 1.23359 Threads: 1 Forward time: 5.86s Backward time: 0.37s Step time: 31.42s
+123840 Examples seen. Accuracy: 0.5752 Error: 1.07311 Loss: 1.25849 Threads: 1 Forward time: 5.87s Backward time: 0.37s Step time: 32.12s
+125120 Examples seen. Accuracy: 0.5751 Error: 1.03565 Loss: 1.23173 Threads: 1 Forward time: 6.06s Backward time: 0.36s Step time: 31.50s
+126400 Examples seen. Accuracy: 0.5742 Error: 1.08035 Loss: 1.17363 Threads: 1 Forward time: 5.89s Backward time: 0.36s Step time: 31.80s
+127680 Examples seen. Accuracy: 0.5736 Error: 1.15604 Loss: 1.26724 Threads: 1 Forward time: 5.89s Backward time: 0.38s Step time: 31.28s
+128960 Examples seen. Accuracy: 0.5734 Error: 1.17571 Loss: 1.32979 Threads: 1 Forward time: 5.88s Backward time: 0.37s Step time: 32.13s
+130240 Examples seen. Accuracy: 0.5743 Error: 1.05281 Loss: 1.12707 Threads: 1 Forward time: 5.86s Backward time: 0.36s Step time: 31.44s
+131520 Examples seen. Accuracy: 0.5771 Error: 1.07029 Loss: 1.18391 Threads: 1 Forward time: 5.87s Backward time: 0.35s Step time: 31.62s
+132800 Examples seen. Accuracy: 0.5752 Error: 1.01553 Loss: 1.11597 Threads: 1 Forward time: 6.07s Backward time: 0.38s Step time: 31.50s
+134080 Examples seen. Accuracy: 0.5742 Error: 1.10272 Loss: 1.30604 Threads: 1 Forward time: 6.27s Backward time: 0.45s Step time: 35.50s
+135360 Examples seen. Accuracy: 0.5765 Error: 1.04867 Loss: 1.27346 Threads: 1 Forward time: 5.89s Backward time: 0.32s Step time: 32.73s
+136640 Examples seen. Accuracy: 0.5749 Error: 1.03399 Loss: 1.16632 Threads: 1 Forward time: 6.01s Backward time: 0.46s Step time: 31.98s
+137920 Examples seen. Accuracy: 0.5750 Error: 1.06162 Loss: 1.16515 Threads: 1 Forward time: 5.78s Backward time: 0.45s Step time: 30.94s
+139200 Examples seen. Accuracy: 0.5773 Error: 0.93660 Loss: 0.94463 Threads: 1 Forward time: 5.97s Backward time: 0.40s Step time: 31.07s
+140480 Examples seen. Accuracy: 0.5776 Error: 1.08967 Loss: 1.17255 Threads: 1 Forward time: 5.82s Backward time: 0.36s Step time: 31.16s
+141760 Examples seen. Accuracy: 0.5783 Error: 1.04453 Loss: 1.15714 Threads: 1 Forward time: 5.78s Backward time: 0.38s Step time: 31.50s
+143040 Examples seen. Accuracy: 0.5794 Error: 1.04892 Loss: 1.20957 Threads: 1 Forward time: 5.75s Backward time: 0.41s Step time: 31.29s
+144320 Examples seen. Accuracy: 0.5802 Error: 1.15719 Loss: 1.30460 Threads: 1 Forward time: 5.80s Backward time: 0.34s Step time: 31.17s
+145600 Examples seen. Accuracy: 0.5800 Error: 1.10852 Loss: 1.21309 Threads: 1 Forward time: 5.75s Backward time: 0.37s Step time: 30.69s
+146880 Examples seen. Accuracy: 0.5792 Error: 1.06575 Loss: 1.17291 Threads: 1 Forward time: 5.81s Backward time: 0.31s Step time: 30.74s
+148160 Examples seen. Accuracy: 0.5794 Error: 1.06069 Loss: 1.11402 Threads: 1 Forward time: 5.77s Backward time: 0.36s Step time: 30.71s
+149440 Examples seen. Accuracy: 0.5804 Error: 1.14940 Loss: 1.29790 Threads: 1 Forward time: 5.76s Backward time: 0.38s Step time: 30.89s
+150720 Examples seen. Accuracy: 0.5787 Error: 1.14937 Loss: 1.26299 Threads: 1 Forward time: 5.78s Backward time: 0.42s Step time: 30.71s
+152000 Examples seen. Accuracy: 0.5779 Error: 1.09491 Loss: 1.21319 Threads: 1 Forward time: 5.80s Backward time: 0.32s Step time: 30.69s
+153280 Examples seen. Accuracy: 0.5770 Error: 1.09485 Loss: 1.10378 Threads: 1 Forward time: 5.79s Backward time: 0.35s Step time: 30.76s
+154560 Examples seen. Accuracy: 0.5777 Error: 1.10126 Loss: 1.24460 Threads: 1 Forward time: 5.86s Backward time: 0.27s Step time: 31.17s
+155840 Examples seen. Accuracy: 0.5802 Error: 0.97383 Loss: 1.04344 Threads: 1 Forward time: 5.75s Backward time: 0.41s Step time: 30.82s
+157120 Examples seen. Accuracy: 0.5814 Error: 0.98040 Loss: 1.10393 Threads: 1 Forward time: 5.84s Backward time: 0.33s Step time: 31.71s
+158400 Examples seen. Accuracy: 0.5830 Error: 1.04088 Loss: 1.16595 Threads: 1 Forward time: 5.77s Backward time: 0.40s Step time: 30.90s
+159680 Examples seen. Accuracy: 0.5855 Error: 1.08467 Loss: 1.26513 Threads: 1 Forward time: 6.12s Backward time: 0.41s Step time: 31.61s
+40000 of samples have been processed.
+Starting Validation.
+VALIDATION RECORD! Saving NN at SimpleImageClassifierEKON25-5000.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetMaxPool:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetMaxPool:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 4 Examples seen:160000 Validation Accuracy: 0.6137 Validation Error: 1.0257 Validation Loss: 1.0912 Total time: 114.40min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 16.0000 minutes. 5 epochs: 1.4000 hours.
+Epochs: 4. Working time: 1.91 hours.
+161280 Examples seen. Accuracy: 0.5847 Error: 1.07231 Loss: 1.15102 Threads: 1 Forward time: 5.92s Backward time: 0.36s Step time: 31.73s
+162560 Examples seen. Accuracy: 0.5826 Error: 1.11944 Loss: 1.31139 Threads: 1 Forward time: 5.77s Backward time: 0.34s Step time: 31.33s
+163840 Examples seen. Accuracy: 0.5844 Error: 1.01714 Loss: 1.17525 Threads: 1 Forward time: 5.83s Backward time: 0.31s Step time: 30.79s
+165120 Examples seen. Accuracy: 0.5846 Error: 1.09477 Loss: 1.18253 Threads: 1 Forward time: 5.78s Backward time: 0.35s Step time: 30.90s
+166400 Examples seen. Accuracy: 0.5862 Error: 1.05677 Loss: 1.14593 Threads: 1 Forward time: 5.81s Backward time: 0.32s Step time: 30.78s
+167680 Examples seen. Accuracy: 0.5839 Error: 1.03539 Loss: 1.10433 Threads: 1 Forward time: 5.79s Backward time: 0.31s Step time: 30.93s
+168960 Examples seen. Accuracy: 0.5835 Error: 1.08902 Loss: 1.12481 Threads: 1 Forward time: 5.80s Backward time: 0.36s Step time: 30.96s
+170240 Examples seen. Accuracy: 0.5820 Error: 1.02423 Loss: 1.10735 Threads: 1 Forward time: 5.82s Backward time: 0.29s Step time: 30.88s
+171520 Examples seen. Accuracy: 0.5847 Error: 0.89942 Loss: 0.93572 Threads: 1 Forward time: 5.84s Backward time: 0.36s Step time: 31.03s
+172800 Examples seen. Accuracy: 0.5858 Error: 1.02484 Loss: 1.14773 Threads: 1 Forward time: 5.82s Backward time: 0.31s Step time: 31.23s
+174080 Examples seen. Accuracy: 0.5842 Error: 1.07013 Loss: 1.24138 Threads: 1 Forward time: 5.82s Backward time: 0.36s Step time: 31.20s
+175360 Examples seen. Accuracy: 0.5840 Error: 1.06765 Loss: 1.34372 Threads: 1 Forward time: 5.77s Backward time: 0.36s Step time: 30.85s
+176640 Examples seen. Accuracy: 0.5833 Error: 1.05838 Loss: 1.11912 Threads: 1 Forward time: 5.75s Backward time: 0.36s Step time: 30.63s
+177920 Examples seen. Accuracy: 0.5850 Error: 0.86153 Loss: 0.90542 Threads: 1 Forward time: 5.81s Backward time: 0.30s Step time: 31.02s
+179200 Examples seen. Accuracy: 0.5857 Error: 1.07826 Loss: 1.19729 Threads: 1 Forward time: 5.83s Backward time: 0.39s Step time: 30.94s
+180480 Examples seen. Accuracy: 0.5856 Error: 0.99669 Loss: 1.15751 Threads: 1 Forward time: 5.80s Backward time: 0.36s Step time: 30.93s
+181760 Examples seen. Accuracy: 0.5853 Error: 0.99416 Loss: 1.19984 Threads: 1 Forward time: 5.94s Backward time: 0.25s Step time: 30.74s
+183040 Examples seen. Accuracy: 0.5869 Error: 0.94657 Loss: 1.01771 Threads: 1 Forward time: 5.82s Backward time: 0.33s Step time: 30.81s
+184320 Examples seen. Accuracy: 0.5876 Error: 1.00075 Loss: 1.07202 Threads: 1 Forward time: 6.03s Backward time: 0.47s Step time: 31.26s
+185600 Examples seen. Accuracy: 0.5886 Error: 1.04090 Loss: 1.02483 Threads: 1 Forward time: 5.77s Backward time: 0.35s Step time: 30.68s
+186880 Examples seen. Accuracy: 0.5883 Error: 1.06838 Loss: 1.10396 Threads: 1 Forward time: 5.96s Backward time: 0.43s Step time: 31.35s
+188160 Examples seen. Accuracy: 0.5896 Error: 0.99614 Loss: 1.20265 Threads: 1 Forward time: 5.85s Backward time: 0.28s Step time: 31.23s
+189440 Examples seen. Accuracy: 0.5898 Error: 1.09727 Loss: 1.23992 Threads: 1 Forward time: 5.89s Backward time: 0.40s Step time: 30.79s
+190720 Examples seen. Accuracy: 0.5909 Error: 1.05264 Loss: 1.12236 Threads: 1 Forward time: 5.83s Backward time: 0.50s Step time: 33.63s
+192000 Examples seen. Accuracy: 0.5918 Error: 1.01340 Loss: 1.21166 Threads: 1 Forward time: 6.09s Backward time: 0.56s Step time: 31.89s
+193280 Examples seen. Accuracy: 0.5928 Error: 1.00787 Loss: 1.08374 Threads: 1 Forward time: 5.87s Backward time: 0.44s Step time: 33.72s
+194560 Examples seen. Accuracy: 0.5942 Error: 0.94592 Loss: 1.06984 Threads: 1 Forward time: 6.36s Backward time: 0.26s Step time: 32.33s
+195840 Examples seen. Accuracy: 0.5949 Error: 1.00986 Loss: 1.13158 Threads: 1 Forward time: 6.62s Backward time: 0.70s Step time: 32.48s
+197120 Examples seen. Accuracy: 0.5959 Error: 1.03814 Loss: 1.25223 Threads: 1 Forward time: 5.90s Backward time: 0.46s Step time: 33.32s
+198400 Examples seen. Accuracy: 0.5961 Error: 1.03403 Loss: 1.09805 Threads: 1 Forward time: 5.78s Backward time: 0.40s Step time: 31.02s
+199680 Examples seen. Accuracy: 0.5961 Error: 1.09741 Loss: 1.30125 Threads: 1 Forward time: 5.92s Backward time: 0.26s Step time: 31.23s
+40000 of samples have been processed.
+Starting Validation.
+VALIDATION RECORD! Saving NN at SimpleImageClassifierEKON25-5000.nn
+Debug SavetokenStructureToString: 
+Debug structuretostring: -1)TNNetInput:32;32;3;0;0;0;0;0#0)TNNetConvolutionLinear:64;5;2;1;0;0;0;0#1)TNNetMaxPool:4;4;0;0;0;0;0;0#2)TNNetMovingStdNormalization:0;0;0;0;0;0;0;0#3)TNNetConvolutionReLU:64;3;1;1;0;0;0;0#4)TNNetDropout:2;0;0;0;0;0;0;0#5)TNNetMaxPool:2;2;0;0;0;0;0;0#6)TNNetFullConnectLinear:10;1;1;0;0;0;0;0#7)TNNetSoftMax:0;0;0;0;0;0;0;0
+Epochs: 5 Examples seen:200000 Validation Accuracy: 0.6295 Validation Error: 0.9966 Validation Loss: 1.0483 Total time: 142.34min
+Image mX4 FThreadNN[0].DebugWeights(); skipped...
+Epoch time: 16.0000 minutes. 5 epochs: 1.4000 hours.
+Epochs: 5. Working time: 2.37 hours.
+CAI maXbox Neural Fit Finished.
+ mX4 executed: 16/11/2021 11:14:08  Runtime: 2:22:26.354  Memload: 45% use
+PascalScript maXbox4 - RemObjects & SynEdit
+C:\maXbox\EKON_BASTA\EKON24\examples\1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt File stored
+1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt in maxboxdef.ini stored: 11:45:23
+C:\maXbox\EKON_BASTA\EKON24\examples\1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt File stored
+1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt in maxboxdef.ini stored: 11:46:32
+C:\maXbox\EKON_BASTA\EKON24\examples\1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt File stored
+1065__CAI_2_SimpleImageClassifier21_EKON_blogstarter.txt in maxboxdef.ini stored: 11:46:43
+
+
+
