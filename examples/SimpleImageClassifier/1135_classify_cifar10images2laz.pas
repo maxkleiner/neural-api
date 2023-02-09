@@ -6,7 +6,7 @@ unit classify_cifar10_images2laz;
 //https://github.com/maxkleiner/neural-api/blob/master/neural/neuraldatasets.pas
 //https://github.com/maxkleiner/neural-api/blob/master/neural/neuralvolume.pas
 //http://www.softwareschule.ch/examples/uPSI_neuralvolume.txt
-//https://t.co/r6QE2kaEuP
+//https://t.co/r6QE2kaEuP                                 
 {the rpblem(bug) is it predicts always a cat - we work on it}
 
 interface
@@ -34,8 +34,8 @@ type
 
   //public
   
- Const PICPATH = 'C:\maXbox\EKON_BASTA\EKON24\examples\';  
-       TRAINPATH = 'C:\maXbox\EKON_BASTA\EKON24\examples\';
+ Const PICPATH = 'C:\Program Files\Streaming\maxbox4\maxbox47590\maxbox4\resized\';  
+       TRAINPATH = 'C:\Program Files\Streaming\maxbox4\maxbox47590\maxbox4\resized\';
 
   //end;
 
@@ -121,28 +121,29 @@ var
 begin
   NN:= THistoricalNets.create; //TNNet.Create();
   //NN.LoadFromFile(TRAINPATH+'SimpleImageClassifierEkon26_70.nn');
-  NN.LoadFromFile(TRAINPATH+'EKON25_SimpleImageClassifier-60.nn');
+  NN.LoadFromFile(TRAINPATH+'SimpleImageClassifierEkon26_70.nn');
   //NN.EnableDropouts(false);
   pInput:= TNNetVolume.Create0(32, 32, 3, 1);
-  pOutPut:= TNNetVolume.Create0(10, 1, 1, 0);
+  pOutPut:= TNNetVolume.Create0(10, 1, 1, 1);
   writeln('picname: '+extractfilename(ComboBox1.text));
   writeln('picsize1 '+Format('%d×%d',[image1.picture.Width,image1.picture.Height]));
   //LoadPictureIntoVolume(Image1.picture, pInput);
   //image1.picture.loadfromfile(ComboBox1.text);
   // pInput.RgbImgToNeuronalInput(csEncodeRGB); 
   //pinput.ReSize(64,64,3);
-  LoadImageIntoVolume(image1, pInput);     
+  //LoadImageIntoVolume(image1, pInput);     
   //LoadVolumeIntoImage(pinput, image1);
   //pinput.NeuronalWeightToImg54(csEncodeRGB);                  
   //pInput.NeuronalInputToRgbImg(csEncodeRGB);           
   //LoadImageFromFileIntoVolume(ComboBox1.text,pinput)
-  pInput.RgbImgToNeuronalInput(csEncodeRGB); 
+  //pInput.RgbImgToNeuronalInput(csEncodeRGB); 
+  LoadPictureIntoVolume(image1.picture, pinput); 
   //loadCifar10Dataset2(ImgVolumes, 5, 0,csEncodeRGB);
   // pInput.RgbImgToNeuronalInput(csEncodeRGB);
   writeln('picsize2 '+itoa(pinput.size));
   NN.Compute65(pInput,0);
   NN.GetOutput(pOutPut);
-  writeln('resget class type '+itoa(pOutPut.GetClass()));   
+  writeln('resget class type: '+itoa(pOutPut.GetClass()));   
   Label1.Caption:= 'predict is: '+cs10Labels[pOutPut.GetClass()];
   for k:= 1 to 10 do
     StringGrid1.Cells[1,k]:= 
@@ -300,6 +301,16 @@ ref: https://www.cs.toronto.edu/~kriz/cifar.html
 Compute - Wrong Input Size:0 Expected size is:3072 Have you missed the TNNetInput layer?    = 32*32*3
 
 Lazarus Unit laZ
+
+
+C:\Program Files\Streaming\maxbox4\maxbox47590\maxbox4\lib\cai-svncode-r655-trunk-lazarus-libs\cai-svncode-r1014-trunk-lazarus-neural
+C:\Program Files\Streaming\maxbox4\maxbox47590\maxbox4\lib\lazarus-ccr-svn-3722\lazarus-ccr-svn-3722\components\multithreadprocs
+C:\Program Files\Streaming\maxbox4\maxbox47590\maxbox4\resized\neural-api-master\neural-api-master\neural
+C:\Programme\Streaming\lazarus\lcl\units\x86_64-win64\win32
+C:\Programme\Streaming\lazarus\lcl\units\x86_64-win64
+C:\Programme\Streaming\lazarus\components\lazutils\lib\x86_64-win64
+C:\Programme\Streaming\lazarus\packager\units\x86_64-win64
+C:\Program Files\Streaming\maxbox4\maxbox47590\maxbox4\resized\CAI-NEURAL-API-Test-master\CAI-NEURAL-API-Test-master
 
 program classsifyimage;
 
