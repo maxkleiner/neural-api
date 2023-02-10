@@ -25,8 +25,9 @@ type
   var
     Button1: TButton;
     ComboBox1: TComboBox;
+    chkboxdrop: TCheckbox;
     Image1, image2: TImage;
-    Label1, label2: TLabel;
+    Label1, label2, lbldropout: TLabel;
     StringGrid1: TStringGrid;
     procedure TForm1Button1Click(Sender: TObject);
     procedure TForm1ComboBox1Change(Sender: TObject);
@@ -119,7 +120,9 @@ begin
   //NN.LoadFromFile(TRAINPATH+'SimpleImageClassifierEkon26_70.nn');
   NN.LoadFromFile(TRAINPATH);
   label2.caption:= 'load: '+TRAINPATH;
-  //NN.EnableDropouts(false);
+  if chkboxdrop.checked then
+    NN.EnableDropouts(true) else
+    NN.EnableDropouts(false);
   pInput:= TNNetVolume.Create0(32, 32, 3, 1);
   pOutPut:= TNNetVolume.Create0(10, 1, 1, 1);
   writeln('picname: '+extractfilename(ComboBox1.text));
@@ -229,10 +232,27 @@ Form1:= TForm1.create(self);
     Caption:= 'model'
     ParentColor:= False
   end;
+  Lbldropout:= TLabel.create(form1)
+  with lbldropout do begin
+    parent:= form1;
+    Left:= 220; height:= 13
+    Top:= 50;  Width:= 31               
+    Caption:= 'dropout:'
+    ParentColor:= False
+  end;
+  chkboxdrop:= TCheckbox.create(form1)
+  with chkboxdrop do begin
+    parent:= form1;
+    Left:= 270; height:= 13
+    Top:= 52;  Width:= 31 
+    checked:= true;              
+   // Caption:= 'dropout'
+    ParentColor:= False
+  end;
   StringGrid1:= TStringGrid.create(form1)
   with stringgrid1 do begin
     parent:= form1;
-    Left:= 5; Height:= 280;
+    Left:= 5; Height:= 279;
     Top:= 142; width:= 193
     ColCount:= 2
     RowCount:= 11
