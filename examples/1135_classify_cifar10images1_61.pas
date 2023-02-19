@@ -1,4 +1,4 @@
-unit classify_cifar10_images2lazTutor42_1_6;
+unit classify_cifar10_images2lazTutor42_1_61;
 
 //{$mode objfpc}{$H+}       resize to 40*40 top model
 //http://www.softwareschule.ch/examples/uPSI_NeuralNetworkCAI.txt
@@ -8,7 +8,7 @@ unit classify_cifar10_images2lazTutor42_1_6;
 //http://www.softwareschule.ch/examples/uPSI_neuralvolume.txt
 //https://t.co/r6QE2kaEuP                                 
 {the rpblem(bug) is it predicts always a cat - solved!, with findfiles}
-//Tutor and Demo 105 for Lazarus CAI Package Integration
+//Tutor and Demo 105 for Lazarus CAI Package2 Integration
 
 interface
 
@@ -125,13 +125,13 @@ begin
         ImgVolumes.Add(TNNetVolume.Create());
       loadCifar10Dataset(ImgVolumes, TBATCH, 0,csEncodeRGB); //"test_batch.bin"
       ImgVolumes.ResizeImage(40, 40); 
-      WriteLn(' Totalsize: '+ itoa(ImgVolumes.gettotalsize));
+      WriteLn(' Testbatch size: '+ itoa(ImgVolumes.gettotalsize));
       WriteLn(' dbug volumescount: '+ itoa(ImgVolumes.Count));
       //ImgVolumes[it].ReSize(40,40,3);
-      TestBatch(aNN, ImgVolumes, 1000, rate,loss,ErrorSum);
-      writeln('Test batch score: '+Format('Rate:%.4f, Loss:%.4f, ErrorSum:%.4f',
+      TestBatch(aNN, ImgVolumes, 500, rate,loss,ErrorSum);
+      writeln('Testbatch score: '+Format('Rate:%.4f, Loss:%.4f, ErrorSum:%.4f',
                                                       [rate, loss, ErrorSum]));
-      label2.Caption:= format('Ø %.2f%% ',[rate*100]);
+      label2.Caption:= format('Score Ø %.2f%% ',[rate*100]);
     finally
       ImgVolumes.Free;
   end;  
@@ -144,21 +144,17 @@ var
   k: integer;
 begin
   NN:= THistoricalNets.create; //TNNet.Create();
-  //NN.LoadFromFile(TRAINPATH+'SimpleImageClassifierEkon26_70.nn');
   NN.LoadFromFile(TRAINPATH);
   label2.caption:= 'load: '+TRAINPATH;
-     if chkboxdrop.checked then
-       NN.EnableDropouts(true) else
-       NN.EnableDropouts(false); 
+  if chkboxdrop.checked then
+    NN.EnableDropouts(true) else
+      NN.EnableDropouts(false); 
   pInput:= TNNetVolume.Create0(40, 40, 3, 1);
   pOutPut:= TNNetVolume.Create0(10, 1, 1, 1);
-  // pinput.ReSize(40,40,3);
-  //image1.picture.width:= 40;
   writeln('picname: '+extractfilename(ComboBox1.text));
   writeln('picsize1 '+Format('%d×%d',[image1.picture.Width,image1.picture.Height]));
   LoadPictureIntoVolume(image1.picture, pinput); 
   pinput.ReSize(40,40,3);
-  //loadCifar10Dataset2(ImgVolumes,5,0,csEncodeRGB);
   pInput.RgbImgToNeuronalInput(csEncodeRGB);
   writeln('picsize2 '+itoa(pinput.size));
   NN.Compute65(pInput,0);
@@ -207,12 +203,12 @@ begin
   end;
 end;
 
-procedure loadAIForm;
+procedure LoadAIForm;
 begin
 Form1:= TForm1.create(self);
  with form1 do begin
   setbounds(145, 486, 430, 440)
-  Caption:= 'Form1 maXbox CAI_Classify 1.6'
+  Caption:= 'Form1 maXbox CAI_Classify 1.61'
   ClientHeight:= 440; ClientWidth:= 425;
   icon.loadfromresourcename(hinstance, 'XLV');
   OnCreate:= @TForm1formCreate;
