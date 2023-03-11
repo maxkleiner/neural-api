@@ -1,0 +1,447 @@
+//****************API Tester25**************************
+program Rapid_API_13throot_AscendingPrimes;
+
+//https://rosettacode.org/wiki/Ascending_primes#Pascal
+//http://www.softwareschule.ch/examples/qrcode.txt
+//https://rapidapi.com/maxkleiner1/api/maxbox4/tutorials
+//https://maxkleiner1.medium.com/google-safe-browsing-api-54e8303768d1
+//#sign:breitsch: BREITSCH-BOX: 10/03/2023 16:23:28 
+
+//TODO: Generate and show all primes with strictly ascending decimal digits.
+
+Const PYHOME='C:\Users\breitsch\AppData\Local\Programs\Python\Python37-32\'; 
+      Amaxsize= 1000;
+
+procedure getAscPrimesPascal(ftopic: string); 
+var
+  queue, primes: array[1..Amaxsize] of integer;
+  b,e,n,k,v, psum: integer;
+begin
+  b:= 1; e:= 1; n:= 0; psum:= 0;
+  for k:= 1 to 9 do begin
+    queue[e]:= k;
+    inc(e)
+  end;
+  while b < e do begin
+    v:= queue[b];
+    b:= b + 1;
+    if flcIsprime(v) then begin
+      inc(n);
+      primes[n]:= v
+    end;
+    for k:= v mod 10 + 1 to 9 do begin
+      queue[e]:= v * 10 + k;
+      inc(e)
+    end
+  end;
+  for k:= 1 to n do begin
+    write(itoa(primes[k])+' ');
+    psum:= psum+ primes[k];
+  end;
+  writeln('sum of ascprimes: '+itoa(psum));   
+end;  
+
+Const def_download_from_sourceforge =
+'def download_from_sourceforge(sf_url, download_dir): '+LF+
+'   r = requests.get(sf_url)                                '+LF+
+'   soup = BeautifulSoup(r.content, "html.parser")          '+LF+
+    
+'   files= [file.a["href"] for file in soup.find_all("th",headers="files_name_h")]'+LF+
+'   for file_download_url in files:                                               '+LF+
+'      filename = file_download_url.split("/")[-2]                                '+LF+
+    
+'      # Skip files that already exist                                            '+LF+
+'      if filename not in os.listdir(download_dir):                               '+LF+
+'         r = requests.get(file_download_url)                                     '+LF+
+    
+'         with open(os.path.join(download_dir, filename), "wb") as f:             '+LF+
+'            f.write(r.content)                                                   '+LF+
+'            print(f"created file {os.path.join(download_dir, filename)}")        ';
+
+//if fileExistst(PYDLLPATH+ 'python37.dll';
+procedure pyfinalize;
+   external 'Py_Finalize@C:\Users\breitsch\AppData\Local\Programs\Python\Python37-32\python37.dll stdcall';
+ 
+procedure getAscPrimesPython(ftopic: string); 
+begin
+  with TPythonEngine.Create(Nil) do begin
+    pythonhome:= PYHOME;
+    AutoFinalize:= false;
+    loadDLL();
+    try
+      Execstring('import urllib.request, json, os, requests'); 
+      execStr('from sympy import isprime');
+      //execstr('from scipy.signal import convolve2d');
+      execstr('from bs4 import BeautifulSoup');
+      execstr(def_download_from_sourceforge);
+      {execstr('download_from_sourceforge("https://sourceforge.net/projects/maxbox/files/Examples/ID/",'+                                            'r"./examples/examples2")');  }
+      execStr('def ascending(x=0):'+LF+
+                 '  for y in range(x*10 + (x%10)+1, x*10+10):'+LF+
+                 '    yield from ascending(y)'+LF+
+                 '    yield(y)');
+      Println(EvalStr('sorted(x for x in ascending() if isprime(x))'));
+      Print('sum of ascprimes: '+
+              EvalStr('sum(sorted(x for x in ascending() if isprime(x)))'));
+    except
+      raiseError;
+    finally
+      //pyfinalize();
+      unloadDll;
+      Free;
+      //pyfinalize();
+    end;    
+  end;
+end; 
+
+function goCharToHex(const AChar: Char): Byte;
+begin
+  case AChar of
+    '0'..'9': Result := Ord(AChar) - Ord('0');
+    'A'..'F': Result := Ord(AChar) - Ord('A') + 10;
+    'a'..'f': Result := Ord(AChar) - Ord('a') + 10;
+  else
+  //  xraise (ArgumentException.CreateRes(@sArgumentInvalid));
+    //xraise (Exception.CreateRes('@sArgumentInvalid'));
+    xraise(Exception.Create('@sArgumentInvalid'))
+  end;
+end;
+
+const
+  aKB = 1024;
+  aMB = aKB * aKB;
+  aGB = (aMB) * aKB;
+  aTB = (aGB) * aKB;
+
+function goByteCountToString(const AByteCount: Int64): String;
+//TB doesnt work
+var
+  AbsCount: Int64;
+  goUSFormatSettings : TFormatSettings;
+begin
+  goUSFormatSettings := GetFormatSettings2; // TFormatSettings.Create('en-US');
+  goUSFormatSettings.DecimalSeparator := '.';
+  goUSFormatSettings.ThousandSeparator := ',';
+  AbsCount:= Absint(AByteCount);
+  writeln(itoa(abscount)+' '+inttostr64(aGB));
+  if (AbsCount < (2 * aKB)) then
+    Result:= Format2('%d bytes', [AByteCount], goUSFormatSettings)
+  else if (AbsCount < (2 * aMB)) then
+    Result:= Format2('%.3f KB', [AByteCount / aKB], goUSFormatSettings)
+  else if (AbsCount < (1* aGB)) then
+    Result:= Format2('%.3f MB', [AByteCount / aMB], goUSFormatSettings)
+  else if (AbsCount < (2 * aTB)) then
+    Result:= Format2('%.3f GB', [AByteCount / aGB], goUSFormatSettings)
+  else
+    Result:= Format2('%.3f TB', [AByteCount / aTB], goUSFormatSettings);
+end;
+
+const
+  UTC_MIDNIGHT_JAN_0001 {: TDateTime} = -693593;
+  { The minimum and maximum number of milliseconds since the Unix epoch that
+    we can use to convert to and from a TDateTime value without loss in
+    precision. Note that Delphi's TDateTime type can safely handle a larger
+    range of milliseconds, but other languages may not. }
+  MIN_MILLISECONDS_SINCE_EPOCH = -62135596800000;
+  MAX_MILLISECONDS_SINCE_EPOCH = 253402300799999;
+
+function goDateTimeToMillisecondsSinceEpoch(const AValue: TDateTime;
+  const AInputIsUTC: Boolean): Int64;
+var
+  Date: TDateTime;
+begin
+  if AInputIsUTC then
+    Date := AValue
+  else
+    //Date := TTimeZone.Local.ToUniversalTime(AValue);
+   date:= AlLocalDateTimeToGMTDateTime(aValue);
+    
+  Result := MilliSecondsBetween(UnixDateDelta, Date);
+  if (Date < UnixDateDelta) then
+     Result := -Result;
+end;
+
+procedure TgoByteBuffer_AppendBuffer(const ABuffer: TBytes; const ASize: Integer);
+var
+  GrowSize: Integer;
+  FBuffer: TBytes;
+    FSize: Integer;
+    FDeltaMask: Integer;
+    FDeltaShift: Integer;
+    FCapacity: Integer;
+    //Timespan: TTimeSpan;
+begin
+  if ((FSize + ASize) > FCapacity) then
+  begin
+    GrowSize := (FSize + ASize) - FCapacity;
+    GrowSize := ((GrowSize + FDeltaMask) shr FDeltaShift) shl FDeltaShift;
+    Inc2(FCapacity, GrowSize);
+    SetLength(FBuffer, FCapacity);
+  end;
+  //Move(ABuffer, FBuffer[FSize], ASize);     fix
+  Inc2(FSize, ASize);
+end;
+
+ //Format file byte size
+ const
+   dB = 1; //byte
+   dKB = 1024 * dB; //kilobyte
+   dMB = 1024 * dKB; //megabyte
+   dGB = 1024 * dMB; //gigabyte
+ function FormatByteSize(const bytes: int64): string;
+ begin
+   if bytes > dGB then
+     result := FormatFloat('#.## GB', bytes / dGB)
+   else
+     if bytes > dMB then
+       result := FormatFloat('#.## MB', bytes / dMB)
+     else
+       if bytes > dKB then
+         result := FormatFloat('#.## KB', bytes / dKB)
+       else
+         result := FormatFloat('#.## bytes', bytes) ;
+ end;
+
+const BIGtestfile = 'C:\Users\breitsch\Downloads\A.Quiet.Place.2.2021.German.English.720p.mkv';
+  
+begin //@main
+  maxcalcF('2^13');
+  with TBigFloat.create do begin
+    assign8('9814843037474615665221286141505078084763648')
+    nroot(13,20 )
+    writeln(tostring(false));
+    free;
+  end; 
+  
+  getAscPrimesPascal('');
+  writeln(' '+CRLF) 
+  getAscPrimesPython('');
+  writeln(botostr(flcIsprime(23456789)));
+  maxcalcF('2^(1/pi)');
+  maxcalcF('2^(1/pi)^2');
+  writeln(botostr(flcIsprime(12468689889)));
+  writeln(goByteCountToString(filesize(exepath+'maxbox4.exe')));
+  
+  writeln(inttostr64(filesize(BIGtestfile)));
+  writeln(inttostr64(diGetFileSize(BIGtestfile) div (1024 *1024)));
+  writeln(floattostr(diGetFileSize(BIGtestfile) / (1024 *1024*1024)));
+  writeln(inttostr64(AlGetFileSize(BIGtestfile)));
+  
+  //FormatFloat('#.## GB', bytes / dGB)
+  writeln(FormatFloat('#.## GB',diGetFileSize(BIGtestfile)/(1024*1024*1024)));
+  writeln(FormatByteSize(AlGetFileSize(BIGtestfile)));
+  //FormatByteSize(const bytes: LongInt): string;
+  writeln(inttostr64(goDateTimeToMillisecondsSinceEpoch(now, false)));
+  writeln(inttostr64(goDateTimeToMillisecondsSinceEpoch(MakeUTCTime(now), true)));
+  writeln(datetimetostr(MakeUTCTime(now))) ;
+  writeln(datetimetostr(AlLocalDateTimeToGMTDateTime(now)));
+  writeln(datetimetostr(MakeLocalTimeFromUTC( MakeUTCTime(now))));
+  writeln(timezone +'  '+GetCurrentTimeZoneGMTOffset)
+  writeln(GetWMIScheduledJobUTCTime(now));
+  
+end.
+
+//#Task: Generate and show all primes with strictly ascending decimal digits.
+
+exception:
+Everything worked fine with simple .py programs until I imported a large program. The strangest thing is that the program runs with no problem the first time, but the second time an exception is raised: 
+
+Exception: Access violation at address 70BF5766 in module '_multiarray_umath.cp37-win32.pyd'. Write of address 00000048.
+
+I managed to work past this problem. It seems that some modules have problems when their initialization routines are called more than once, and numpyis one of those. The solution is to call Py_Finalize() only once at the very end of the program. Py_Initialize() can be called as many times as you want, as if Python is already initialized, Py_Initialize() is a non-op ...
+
+sum of ascprimes: 43965121
+ mX4 executed: 06/03/2023 17:28:28  Runtime: 0:0:2.570  Memload: 46% use
+
+doc: https://docs.sympy.org/latest/modules/ntheory.html
+
+https://archive.org/details/g9-improver/G9_7_zeitraum.mp3
+
+https://archive.org/details/maxbox4
+
+Unter der Annahme, dass die FUB bereits partiell kompromittiert ist, soll das Überspringen auf 
+weitere Systeme und Services erschwert resp. verhindert werden. Hierzu ist es notwendig, 
+dass die durchzuführenden Penetrations- und, Vulnerabilitätstests periodisch geplant und 
+auch durchgeführt werden.
+4.5 Ergebnisse aus der Risikoanalys
+
+These Go courses will take you step-by-step through the basics of Golang, including installation, packages, running code, data types, variables, functions, operators, conditionals, switches, loops, structs, arrays, slices, ranges, pointers, and maps.  You'll master concurrency, interfaces, and error handling, as well as hands-on practical exercise solutions and demonstrations of channel and receiver functions, common Go libraries, and object-oriented programming in Go.
+
+6 Folgerunge
+
+ref: 8192
+2028.0
+2 3 5 7 13 17 19 23 29 37 47 59 67 79 89 127 137 139 149 157 167 179 239 257 269 347 349 359 367 379 389 457 467 479 569 1237 1249 1259 1279 1289 1367 1459 1489 1567 1579 1789 2347 2357 2389 2459 2467 2579 2689 2789 3457 3467 3469 4567 4679 4789 5
+
+
+doc:
+https://www.quora.com/Without-calculators-the-13th-root-of-9814843037474615665221286141505078084763648-is-an-integer-what-integer
+
+sympy isprime type.__new__(mpq): mpq is not a subtype of type.
+sympy isprime class 'TypeError'>: type.__new__(mpq): mpq is not a subtype of type
+
+see also: 1173_quora_mathquest_utilities.txt
+
+ref: (I used to amuse myself as a child on long car rides, doing just that with license plate numbers which are all digits where I grew up in. I’ve become handy with it, which is perhaps a little unfair. But we can agree that this is just a mecha
+     
+
+https://stackoverflow.com/questions/5661596/do-i-need-a-content-type-header-for-http-get-requests
+
+As far as I understood there are two places where to set the content type:
+
+    The client sets a content type for the body he is sending to the server (e.g. for post)
+    The server sets a content type for the response.
+
+    A sender that generates a message containing a payload body SHOULD generate a Content-Type header field in that message unless the intended media type of the enclosed representation is unknown to the sender. If a Content-Type header field is 
+
+It means that the Content-Type HTTP header should be set only for PUT and POST requests.
+
+GET requests can have "Accept" headers, which say which types of content the client understands. The server can then use that to decide which content type to send back.
+
+writeln(GETDOSOutput('cmd.exe /c wmic cpu get architecture','C:\'));
+    writeln(GETDOSOutput('cmd.exe /c wmic cpu get name','C:\'));
+    //to monitor tcp spyware over PID - process ID
+    memo2.setFocus;
+    repeat
+      writeln(GETDOSOutput('cmd.exe /c netstat -o','C:\'));
+      memo2.color:= clsilver;
+      sleep(2000)
+      memo2.color:= clyellow;    
+    until isKeyPressed;  
+    memo2.color:= clwhite;    
+    writeln(SysErrorMessage(GetLastError))
+
+ Doc: TALWininetHttpClient
+ 
+ TALWinInetHttpClient is a is easy to use WinInet-based. HTTP client component which allows to post and get. any data from the Web via HTTP protocol.
+ 
+ https://svn.code.sf.net/p/alcinoe/code/demos/ALWinInetHTTPClient/_source/Unit1.pas
+ 
+ https://docwiki.embarcadero.com/Libraries/Sydney/en/System.Net.HttpClient.THTTPClient.Post
+
+https://stackoverflow.com/questions/9713491/delphi-decode-json-utf8-escaped-text
+12\uXXXX is the JSON Unicode escape notation (X is hexadecimal).
+
+
+  ref:  
+--------------------------------------------------------
+TWinApiDownload = class(TObject)
+  private
+    fEventWorkStart : TEventWorkStart;
+    fEventWork : TEventWork;
+    fEventWorkEnd : TEventWorkEnd;
+    fEventError : TEventError;
+    fURL : string;
+    fUserAgent : string;
+    fStop : Boolean;
+    fActive : Boolean;
+    fCachingEnabled : Boolean;
+    fProgressUpdateInterval : Cardinal;
+    function GetIsActive : Boolean;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function CheckURL(aURL: string) : Integer;
+    function Download(Stream : TStream) : Integer; overload;
+    function Download(var res : string) : Integer; overload;
+    function ErrorCodeToMessageString(aErrorCode : Integer) : string;
+    procedure Stop;
+    procedure Clear;
+    property UserAgent : string read fUserAgent write fUserAgent;
+    property URL : string read fURL write fURL;
+    property DownloadActive : Boolean read GetIsActive;
+    property CachingEnabled : Boolean read fCachingEnabled write fCachingEnabled;
+    property UpdateInterval:Cardinal read fProgressUpdateInterval write fProgressUpdateInterval;
+    property OnWorkStart : TEventWorkStart read fEventWorkStart write fEventWorkStart;
+    property OnWork : TEventWork read fEventWork write fEventWork;
+    property OnWorkEnd : TEventWorkEnd read fEventWorkEnd write fEventWorkEnd;
+    property OnError : TEventError read fEventError write fEventError;
+  end;  
+  
+  
+procedure SIRegister_TJSONObject(CL: TPSPascalCompiler);
+begin
+  //with RegClassS(CL,'TZAbstractObject', 'TJSONObject') do
+  with CL.AddClassN(CL.FindClass('TZAbstractObject'),'TJSONObject') do
+  begin
+    RegisterMethod('Constructor create;');
+    RegisterMethod('Constructor create1( jo : TJSONObject; sa : array of string);');
+    RegisterMethod('Constructor create2( x : JSONTokener);');
+    RegisterMethod('Constructor create3( map : TStringList);');
+    RegisterMethod('Constructor create4( s : string);');
+    RegisterMethod('Procedure clean');
+    Function clone : TZAbstractObject');
+    Function accumulate( key : string; value : TZAbstractObject) : TJSONObject');
+    Function get( key : string) : TZAbstractObject');
+    Function getBoolean( key : string) : boolean');
+    Function getDouble( key : string) : double');
+    Function getInt( key : string) : integer');
+    Function getJSONArray( key : string) : TJSONArray');
+    Function getJSONObject( key : string) : TJSONObject');
+    Function getString( key : string) : string');
+    Function has( key : string) : boolean');
+    Function isNull( key : string) : boolean');
+    Function keys : TStringList');
+    Function length : integer');
+    Function names : TJSONArray');
+    Function numberToString( n : _Number) : string');
+    Function valueToString( value : TZAbstractObject) : string;');
+    Function valueToString1(value: TZAbstractObject; indentFactor,indent : integer) : string;');
+    Function opt( key : string) : TZAbstractObject');
+    Function optBoolean( key : string) : boolean;');
+    Function optBoolean1( key : string; defaultValue : boolean) : boolean;');
+    Function optDouble( key : string) : double;');
+    Function optDouble1( key : string; defaultValue : double) : double;');
+    Function optInt( key : string) : integer;');
+    Function optInt1( key : string; defaultValue : integer) : integer;');
+    Function optString( key : string) : string;');
+    Function optString1( key : string; defaultValue : string) : string;');
+    Function optJSONArray( key : string) : TJSONArray;');
+    Function optJSONObject( key : string) : TJSONObject;');
+    Function put( key : string; value : boolean) : TJSONObject;');
+    Function put1( key : string; value : double) : TJSONObject;');
+    Function put2( key : string; value : integer) : TJSONObject;');
+    Function put3( key : string; value : string) : TJSONObject;');
+    Function put4( key : string; value : TZAbstractObject) : TJSONObject;');
+    Function putOpt( key : string; value : TZAbstractObject) : TJSONObject');
+    Function quote( s : string) : string');
+    Function remove( key : string) : TZAbstractObject');
+    Procedure assignTo( json : TJSONObject)');
+    Function toJSONArray( names : TJSONArray) : TJSONArray');
+    Function toString1( indentFactor : integer) : string;');
+    Function toString2( indentFactor, indent : integer) : string;');
+    RegisterMethod('Function NULL : NULL');
+  end;
+end;
+  
+
+E: Exception: Access violation at address 01F0CC04 in module 'maXbox4.exe'. Read of address 00000000.
+Failed at getting response:415HTTP 415 Unsupported Media Type
+Failed at getting response: 503503 - Service Unavailable
+  
+C:\maXbox\works2021\maxbox4>py
+Python 3.7.3 (v3.7.3:ef4ec6ed12, Mar 25 2019, 22:22:05) [MSC v.1916 64 bit (AMD6
+4)] on win32
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import http.client
+>>>
+>>> conn = http.client.HTTPSConnection("nlp-translation.p.rapidapi.com")
+>>> payload = "text=Hello%20World&to=es&from=en"
+>>> headers = {
+...     'content-type': "application/x-www-form-urlencoded",
+...     'X-RapidAPI-Host': "nlp-translation.p.rapidapi.com",
+...     'X-RapidAPI-Key': "df61a35825msh66c9514de953a7ap192bcfjsn16a3d1018ce3"
+...     }
+
+
+ Willkommen bei INFEFZ.1.12345-BS-J2208-DAST.TB1A    - 15
+ Willkommen bei INFEFZ.1.12345-AR-J2208-DAST.TB1A    - 13
+ 
+ 
+
+  mX4 executed: 29/08/2022 11:15:20  Runtime: 0:0:1.952  Memload: 42% use
+ mX4 executed: 29/08/2022 11:15:33  Runtime: 0:0:1.803  Memload: 42% use
+ mX4 executed: 29/08/2022 11:21:34  Runtime: 0:0:1.771  Memload: 42% use
+ mX4 executed: 30/08/2022 14:01:29  Runtime: 0:0:2.477  Memload: 45% use  
+ mX4 executed: 30/08/2022 15:43:22  Runtime: 0:0:2.406  Memload: 45% use
+ mX4 executed: 30/08/2022 16:07:02  Runtime: 0:0:2.369  Memload: 45% use
+ mX4 executed: 05/09/2022 10:41:55  Runtime: 0:0:2.628  Memload: 42% use  
