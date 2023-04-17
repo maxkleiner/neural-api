@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="11"/>
+    <BuildModes Active="Release"/>
+    <Units Count="5">
+      <Unit0>
+        <Filename Value="classsifyimagecai.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="2"/>
+        <CursorPos X="38" Y="9"/>
+        <UsageCount Value="51"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="unit1cai.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="66"/>
+        <CursorPos X="42" Y="73"/>
+        <UsageCount Value="51"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="..\..\..\lib\lazarus-ccr-svn-3722\lazarus-ccr-svn-3722\components\multithreadprocs\mtprocs.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UsageCount Value="51"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\neural-api-master\neural-api-master\neural\neuralthread.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="167"/>
+        <CursorPos X="29" Y="176"/>
+        <UsageCount Value="26"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\neural-api-master\neural-api-master\neural\neuralvolumev.pas"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="31"/>
+        <CursorPos X="31" Y="43"/>
+        <UsageCount Value="11"/>
+        <Loaded Value="True"/>
+      </Unit4>
+    </Units>
+    <JumpHistory Count="12" HistoryIndex="11">
+      <Position1>
+        <Filename Value="..\..\neural-api-master\neural-api-master\neural\neuralthread.pas"/>
+        <Caret Line="59" Column="16" TopLine="56"/>
+      </Position1>
+      <Position2>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="44" Column="27" TopLine="33"/>
+      </Position2>
+      <Position3>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="57" Column="28" TopLine="43"/>
+      </Position3>
+      <Position4>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="58" Column="28" TopLine="44"/>
+      </Position4>
+      <Position5>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="57" Column="28" TopLine="43"/>
+      </Position5>
+      <Position6>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="52" Column="49" TopLine="40"/>
+      </Position6>
+      <Position7>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="53" Column="36" TopLine="41"/>
+      </Position7>
+      <Position8>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="56" Column="37" TopLine="47"/>
+      </Position8>
+      <Position9>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="54" Column="24" TopLine="48"/>
+      </Position9>
+      <Position10>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="52" Column="32" TopLine="40"/>
+      </Position10>
+      <Position11>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="67" Column="4" TopLine="55"/>
+      </Position11>
+      <Position12>
+        <Filename Value="unit1cai.pas"/>
+        <Caret Line="72" Column="48" TopLine="60"/>
+      </Position12>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes Count="0" ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
