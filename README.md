@@ -12,6 +12,8 @@ This project is a subproject from a bigger and older project called [CAI](https:
 ## Prerequisites
 You'll need [Lazarus](https://www.lazarus-ide.org/) development environment. If you have an OpenCL capable device, you'll need its OpenCL drivers.
 
+![maxbox_classify_script_lazarus](https://user-images.githubusercontent.com/3393121/232415802-bd04a4af-7fb3-48e0-881f-1cb0b81764c4.png)
+
 ## Will It Work with Delphi or maXbox?
 This project is [Lazarus](https://www.lazarus-ide.org/) based. That said, as of release [v0.98](https://github.com/joaopauloschuler/neural-api/releases/tag/v0.98), a number of units do compile with Delphi and you can create and run neural networks with Delphi. You'll be able to compile these units with Delphi: neuralvolume, neuralnetwork, neuralab, neuralabfun, neuralbit, neuralbyteprediction, neuralcache, neuraldatasets, neuralgeneric, neuralplanbuilder, Neural OpenCL, Neural Threading and neuralfit. also with maXbox it can run and test as an intepreter:
 
