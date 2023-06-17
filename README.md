@@ -93,6 +93,8 @@ in maXbox and Lazarus:
 
 There are also some [older code examples](https://sourceforge.net/p/cai/svncode/HEAD/tree/trunk/lazarus/experiments/) that you can look at.
 
+![ml_package_2023-06-17](https://github.com/maxkleiner/neural-api/assets/3393121/b07c4156-a5c7-46a1-b8b7-48af91f43b67)
+
 ## Volumes
 This API heavily relies on volumes. `TNNetVolume` class allows you to create volumes that can be accessed as 1D, 2D or 3D arrays and be operated with AVX SIMD instruction set. This is the most common way to create a volume:
 ```
