@@ -3,7 +3,10 @@ This example has interesting aspects to look at:
 * Its source code is **very** small.
 * Layers are added sequentially.
 * Training parameters are defined before calling the `fit` method.
+* In the MachineLearningPackage Sentiment Analysis API and Crypto Classifier also included as scripts:
 
+![VirtualBox_kalilinux64_04_11_2023_18_09_14_EKON27](https://github.com/maxkleiner/neural-api/assets/3393121/8cd0a3ed-90e1-4b1f-aff8-f680432a92e1)
+  
 This is how a sequential array of layers is added:
 ```
     NN := TNNet.Create();
